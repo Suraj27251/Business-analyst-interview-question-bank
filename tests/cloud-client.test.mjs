@@ -149,6 +149,22 @@ test('applySnapshot replaces local state and removes stale notes', () => {
   assert.deepEqual(JSON.parse(storage.get('baRecent')), []);
 });
 
+test('pending saved removals survive a cloud snapshot', () => {
+  const { client, storage } = loadClient();
+  seedLocal(client);
+  client.store.baSavedQuestions = JSON.stringify({});
+  assert.deepEqual(JSON.parse(storage.get('__prep_removals')).baSavedQuestions, ['a.pdf::1']);
+
+  client._internal.applySnapshot({
+    savedQuestions: [
+      { questionId: 'a.pdf::1', question: 'Question one?', sourcePath: 'a.pdf', sourceIndex: 1, savedAt: 1700000000000 },
+    ],
+  });
+
+  assert.deepEqual(JSON.parse(storage.get('baSavedQuestions')), {}, 'queued deletion is not resurrected');
+  assert.deepEqual(JSON.parse(storage.get('__prep_removals')).baSavedQuestions, ['a.pdf::1'], 'the deletion stays queued');
+});
+
 test('deleting and re-adding a saved question clears the pending removal', () => {
   const { client, storage } = loadClient();
   seedLocal(client);

@@ -381,6 +381,12 @@
     }, isError ? 9000 : 6000);
   }
 
+  function reloadSoon() {
+    setTimeout(function () {
+      try { window.location.reload(); } catch (error) { /* ignore */ }
+    }, 900);
+  }
+
   function showMigrationBanner(localPayload, onMerge, onKeep) {
     var existing = document.getElementById('prepMigration');
     if (existing) existing.remove();
@@ -609,6 +615,7 @@
           savedAt: record.savedAt || 0
         };
       });
+      (removals.baSavedQuestions || []).forEach(function (id) { delete saved[id]; });
       setRaw('baSavedQuestions', JSON.stringify(saved));
 
       var days = {};
@@ -1308,6 +1315,7 @@
         refresh();
         showToast('Cloud progress deleted and local cache cleared.');
         closeModal();
+        reloadSoon();
       }).catch(function (error) {
         showToast('Could not delete cloud progress: ' + error.message, true);
       });
@@ -1324,6 +1332,7 @@
         refresh();
         closeModal();
         showToast('Signed out. Cached private data was removed from this browser.');
+        reloadSoon();
       });
     });
 
