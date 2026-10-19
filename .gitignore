@@ -1,3 +1,20 @@
 BA INTERVIEW RECORDING/GMT20220719-121805_Recording_1920x1200.mp4
 
 BA INTERVIEW RECORDING/GMT20220719-121805_Recording.m4a
+
+# Node / tooling
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Environment files (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# Vercel
+.vercel
+
+# Local test artifacts
+coverage/
+*.log

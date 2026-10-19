@@ -1,0 +1,18 @@
+{
+  "name": "ba-prep-desk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BA Prep Desk - static interview preparation dashboard with optional cloud progress persistence (Vercel Functions + Neon PostgreSQL).",
+  "license": "UNLICENSED",
+  "scripts": {
+    "test": "node --test",
+    "migrate": "node db/migrate.mjs"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.0",
+    "bcryptjs": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
