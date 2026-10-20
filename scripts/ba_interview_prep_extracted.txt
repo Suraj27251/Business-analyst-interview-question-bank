@@ -1,0 +1,143 @@
+===== PAGE 1 =====
+Business Analyst Interview Prep
+Requirements, process mapping, UAT and documentation | Telecom / enterprise systems
+Your proof points for this role (all confirmed as real)
+  Mapped Invoice-to-Collection and Reactivation workflows (BPMN, AS-IS/TO-BE, 16 gaps found)
+ 50 functional requirements, 23 non-functional requirements, 30 user stories with acceptance criteria
+ Authored test plans and test cases; ran SIT/UAT, defect analysis, regression testing, release readiness
+ Tools: Visio, Jira, Confluence, SQL, Power BI, Excel (Power Query, VBA, PivotTables)
+ AI/automation projects: WhatsApp RAG support platform (4 hours to under 5 minutes first response),
+Queryline NL-to-SQL agent
+Do not claim (not confirmed)
+  IIBA, PMI or Scrum certification (you hold none)
+ Financial-services experience
+ Any ceremony you cannot give an example for
+ Numbers you cannot source (do not estimate rupee or percentage figures)
+How this file is built
+  Part 1 is the universal core. These questions appear in almost every interview, so prepare them once.
+ Part 2 is the Business Analyst module. This is the part that changes by role.
+ Part 3 is the JD tool ladder. Rebuild it for every new job description.
+ The answer guides are structures to fill with your own examples, not scripts to memorise.
+Part 1: Universal core (every role)
+1. Tell me about yourself
+They are testing: Whether you can summarise a career in under 90 seconds and link it to this role.
+How to answer: Present role, then one proof point with a number, then why it fits this job. Stop there and let them
+ask.
+Likely follow-ups: Why are you leaving / looking? / What are you proudest of?
+2. Walk me through your highest-ownership project
+They are testing: Real ownership versus participation. Every other question branches from this one.
+How to answer: Problem, your exact role, the decisions you made, result, and what you would change. Choose
+the project before the interview.
+Likely follow-ups: Why did you choose this approach over another? / What went wrong? / How did you measure the
+result?
+3. Why this option and not that one?
+They are testing: Whether you decided with reasons or just followed a default.
+How to answer: Name the options, the criteria you used, what you chose, and the trade-off you knowingly
+accepted.
+Likely follow-ups: What would make you change that decision? / What did it cost you?
+
+===== PAGE 2 =====
+4. Tell me about a conflict with a stakeholder or teammate
+They are testing: Whether you find the real concern behind the disagreement.
+How to answer: What each side wanted, what the underlying worry was, what you did, and the outcome. Keep it
+factual and avoid blaming.
+Likely follow-ups: What if they outranked you? / What would you do differently?
+5. Tell me about a failure or a mistake
+They are testing: Self-awareness and whether you change your process after a mistake.
+How to answer: A real, specific example, what you owned, and the process change you made afterwards.
+Likely follow-ups: How did you tell stakeholders? / Has it happened again?
+6. The scenario just got harder: what do you do?
+They are testing: Whether you escalate honestly or just promise to push through.
+How to answer: Triage by priority, check what can flex (scope, date, quality checks), then raise the real trade-off
+early with options.
+Likely follow-ups: What if they refuse the trade-off? / What do you drop first?
+7. Why this company and why this role?
+They are testing: Whether you did homework and whether the fit is real.
+How to answer: One specific fact about the company, one match to something you have actually done. Not
+generic praise.
+Likely follow-ups: Where do you see yourself in 3 years? / What would you do in your first 90 days?
+8. Do you have any questions for us?
+They are testing: Curiosity and whether you listened during the interview.
+How to answer: Ask 2 or 3: what success looks like at 90 days, the biggest current challenge, and how the team
+is structured around this role.
+Likely follow-ups:
+Part 2: Business Analyst module
+R1. How do you gather requirements when stakeholders cannot say what they want?
+They are testing: Elicitation method, not just 'I ask questions'.
+How to answer: Interviews and workshops, observe the current process, map AS-IS, write requirements back
+and get written confirmation, then prioritise (for example MoSCoW).
+Your story to use: Mapped the Invoice-to-Collection and Reactivation workflows with BPMN (AS-IS and TO-BE)
+and found 16 process gaps.
+Likely follow-ups: What if two stakeholders conflict? / How do you know the requirements are complete?
+R2. What is the difference between a BRD, FRS and user story? When do you use each?
+They are testing: Documentation maturity.
+How to answer: BRD: business goals and scope. FRS: system behaviour in detail. User story: one user-visible
+need with acceptance criteria. Say which your team actually used and why.
+Your story to use: Wrote 50 functional requirements, 23 non-functional requirements and 30 user stories with
+acceptance criteria for the ERP/ISP platform.
+Likely follow-ups: Write a user story with acceptance criteria for a renewal reminder. / How do you keep documents in
+sync after changes?
+
+===== PAGE 3 =====
+R3. Walk me through an AS-IS and TO-BE process you mapped
+They are testing: Process thinking and gap finding.
+How to answer: Pick one process. Describe the AS-IS flow, where it broke (delays, manual steps, handoffs), the
+TO-BE change and how you got sign-off.
+Your story to use: Invoice-to-Collection and Reactivation workflows in Visio/BPMN with business rules and
+decision points.
+Likely follow-ups: Which tool did you use? / How did you find the gaps? / Who signed off?
+R4. Functional versus non-functional requirements: give examples
+They are testing: Basic BA vocabulary used correctly.
+How to answer: Functional: what the system does. Non-functional: how well (performance, security, availability,
+auditability). Give one example of each from your own project.
+Your story to use: Your 23 non-functional requirements for the ERP platform.
+Likely follow-ups: How do you test a non-functional requirement? / Which one gets missed most often?
+R5. How do you prioritise when every stakeholder says theirs is urgent?
+They are testing: Whether you use criteria or just yield to pressure.
+How to answer: Agree criteria first (business value, risk, effort, dependency, deadline), score items together, and
+make the trade-off visible to everyone.
+Likely follow-ups: What if a senior stakeholder overrides the ranking? / Which framework do you prefer?
+R6. A change request arrives in the middle of delivery. What do you do?
+They are testing: Change control and impact analysis.
+How to answer: Log it, assess impact on scope, time, cost and testing, get the right approver to decide, then
+update requirements and traceability.
+Likely follow-ups: Who approves it? / What if it breaks something already tested?
+R7. How do you plan and run UAT?
+They are testing: Whether you actually delivered a release.
+How to answer: Entry criteria, test scenarios tied to requirements, who tests, defect severity versus priority, exit
+criteria and sign-off.
+Your story to use: Authored test plans and test cases yourself and coordinated SIT/UAT, defect analysis,
+regression testing and release readiness.
+Likely follow-ups: Severity versus priority: what is the difference? / UAT fails the day before go-live: what now?
+R8. What is traceability and why does it matter?
+They are testing: Discipline from requirement to test to release.
+How to answer: Each requirement links to a design item and a test case so you can show coverage and see
+what a change affects.
+Likely follow-ups: How did you maintain it? / What did it catch?
+R9. How do you validate data or check a report is correct?
+They are testing: Practical SQL and reconciliation habits.
+How to answer: Row counts, totals against a trusted source, duplicates, nulls, and spot checks on edge cases.
+Say which SQL you actually write.
+Your story to use: Reconciled payments to invoices and used validation rules and root-cause analysis for data
+issues across CRM, billing and payment systems.
+Likely follow-ups: How do you reconcile payments to invoices? / A number looks wrong in a report: first step?
+
+===== PAGE 4 =====
+R10. What is your Agile experience?
+They are testing: Honest, specific ceremony experience.
+How to answer: Name only the ceremonies you can back with an example, and describe your role in each
+(refining stories, demos, backlog).
+Your story to use: Jira and Confluence on real work, plus some Waterfall exposure. Do not claim certifications
+you do not hold.
+Likely follow-ups: How do you write acceptance criteria? / Agile versus Waterfall: when would you choose each?
+Part 3: JD tool ladder
+Pick the tools and methods named in the JD (for example BPMN, Jira, UAT, SQL) and prepare each one with this
+ladder.
+Ladder for every tool or term in the JD: (1) one-line definition, (2) where you used it for real, (3) one trade-off or
+limitation, (4) one thing that went wrong and how you handled it.
+Terms this role usually lists: BPMN, BRD / FRS, user stories, acceptance criteria, UAT / SIT, JIRA /
+Confluence, SQL, API basics, gap analysis, RTM (traceability), MoSCoW
+Questions to ask the interviewer (role-specific)
+  How are requirements approved and who has the final say?
+ What does the current process look like and where does it hurt most?
+ How is UAT organised on this team?
