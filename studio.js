@@ -142,7 +142,10 @@ const PANE_LABEL = {
 };
 
 function studioEscape(v) { return typeof safe === 'function' ? safe(v) : String(v ?? ''); }
-function studioUrl(p) { return typeof url === 'function' ? url(p) : encodeURI(String(p).split('\\').join('/')); }
+function studioUrl(p) {
+  if (p == null || p === '') return '#';
+  return typeof url === 'function' ? url(String(p)) : encodeURI(String(p).split('\\').join('/'));
+}
 
 /* ---------------- unified item pool & filters ----------------------------- */
 
@@ -428,7 +431,7 @@ function frameworkHTML() {
       ${it.testing ? `<div><h4>They are testing</h4><p>${studioEscape(it.testing)}</p></div>` : ''}
       ${it.how ? `<div><h4>How to answer</h4><p>${studioEscape(it.how)}</p></div>` : ''}
       ${it.story ? `<div><h4>Your story to use (from the PDF)</h4><p>${studioEscape(it.story)}</p></div>` : ''}
-      ${it.followUps.length ? `<div><h4>Likely follow-ups</h4><ul class="fw-followups">${it.followUps.map((q) => `<li>${studioEscape(q)}</li>`).join('')}</ul></div>` : ''}
+      ${(it.followUps || []).length ? `<div><h4>Likely follow-ups</h4><ul class="fw-followups">${(it.followUps || []).map((q) => `<li>${studioEscape(q)}</li>`).join('')}</ul></div>` : ''}
       <div class="studio-actions">
         <button class="smallbtn primary" type="button" onclick="studioPracticeRelated('${it.id}')">Practice related repository questions</button>
         <button class="smallbtn" type="button" onclick="studioRateFramework('${it.id}','know')" aria-pressed="${ratingOf(it.id) === 'know'}">Mark rehearsed ✓</button>
@@ -438,29 +441,29 @@ function frameworkHTML() {
   </details>`;
   return `<div class="studio-hero">
     <div>
-      <div class="readlabel">Source: ${studioEscape(f.frameworkSource)} (repository copy)</div>
+      <div class="readlabel">Source: ${studioEscape(STUDIO.frameworkSource)} (repository copy)</div>
       <h2>${studioEscape(f.title)}</h2>
       <p>${studioEscape(f.subtitle)} — Part 1 is the universal core, Part 2 the Business Analyst module, Part 3 the job-description tool ladder. Answer guides are structures to fill with your own examples, not scripts to memorise.</p>
     </div>
     <div class="studio-hero-actions">
-      <a class="smallbtn primary" href="${studioUrl(f.frameworkSource)}" target="_blank" rel="noopener">Open ${studioEscape(f.frameworkSource)} ↗</a>
+      <a class="smallbtn primary" href="${studioUrl(STUDIO.frameworkSource)}" target="_blank" rel="noopener">Open ${studioEscape(STUDIO.frameworkSource)} ↗</a>
     </div>
   </div>
   <div class="cols">
-    <div class="panel"><h3>Your proof points (from the PDF)</h3>${f.framework.proofPoints.map((p) => `<div class="focus-item"><b>${studioEscape(p)}</b></div>`).join('')}</div>
-    <div class="panel"><h3>Do not claim (from the PDF)</h3>${f.framework.doNotClaim.map((p) => `<div class="focus-item"><b>${studioEscape(p)}</b></div>`).join('')}</div>
+    <div class="panel"><h3>Your proof points (from the PDF)</h3>${f.proofPoints.map((p) => `<div class="focus-item"><b>${studioEscape(p)}</b></div>`).join('')}</div>
+    <div class="panel"><h3>Do not claim (from the PDF)</h3>${f.doNotClaim.map((p) => `<div class="focus-item"><b>${studioEscape(p)}</b></div>`).join('')}</div>
   </div>
   <div class="studyhead"><h2>${studioEscape(part1.title)}</h2><p>Prepare each once; almost every interview uses them.</p></div>
   <div class="framework-grid">${part1.items.map(item).join('')}</div>
   <div class="studyhead"><h2>${studioEscape(part2.title)}</h2><p>Role-specific competency questions with the PDF's own guidance and follow-ups.</p></div>
   <div class="framework-grid">${part2.items.map(item).join('')}</div>
-  <div class="studyhead"><h2>${studioEscape(part3.title)}</h2><p>${studioEscape(f.framework.jdLadder ? f.framework.jdLadder.text : '')}</p></div>
+  <div class="studyhead"><h2>${studioEscape(part3.title)}</h2><p>${studioEscape(f.jdLadder ? f.jdLadder.text : '')}</p></div>
   <div class="panel">
     <h3>The ladder, for every tool or term in a job description</h3>
-    <ol class="fw-followups">${(f.framework.jdLadder ? f.framework.jdLadder.steps : []).map((s) => `<li>${studioEscape(s)}</li>`).join('')}</ol>
-    <p class="studio-note">Terms the role usually lists (from the PDF): ${(f.framework.jdTerms || []).map(studioEscape).join(', ')}.</p>
+    <ol class="fw-followups">${(f.jdLadder ? f.jdLadder.steps : []).map((s) => `<li>${studioEscape(s)}</li>`).join('')}</ol>
+    <p class="studio-note">Terms the role usually lists (from the PDF): ${(f.jdTerms || []).map(studioEscape).join(', ')}.</p>
     <h3 style="margin-top:12px">Questions to ask the interviewer (from the PDF)</h3>
-    <ul class="fw-followups">${f.framework.questionsForInterviewer.map((q) => `<li>${studioEscape(q)}</li>`).join('')}</ul>
+    <ul class="fw-followups">${f.questionsForInterviewer.map((q) => `<li>${studioEscape(q)}</li>`).join('')}</ul>
     <div class="studio-actions"><button class="smallbtn primary" type="button" onclick="studioGo('jd')">Open job-description prep →</button></div>
   </div>`;
 }
@@ -473,8 +476,8 @@ function studioPracticeRelated(fwId) {
   startPractice(list, 'Related to ' + fw.code + '. ' + fw.question.slice(0, 60), 'framework');
 }
 function studioRateFramework(id) {
-  rateItem(id, 'know', { question: 'Framework: ' + id, name: STUDIO.framework.frameworkSource, path: STUDIO.framework.frameworkSource });
-  pushRecent({ id, kind: 'framework', question: id, name: STUDIO.framework.frameworkSource }, 'marked rehearsed');
+  rateItem(id, 'know', { question: 'Framework: ' + id, name: STUDIO.frameworkSource, path: STUDIO.frameworkSource });
+  pushRecent({ id, kind: 'framework', question: id, name: STUDIO.frameworkSource }, 'marked rehearsed');
   studioRenderPane();
 }
 
@@ -688,7 +691,7 @@ function studioPracticeJdTerm(term) {
   const support = jdSupportFor(term);
   const list = [...support.framework.map((it) => ({
     id: it.id, kind: 'framework', question: it.question, answer: [it.testing, it.how, it.story].filter(Boolean).join('\n\n'),
-    followUps: it.followUps.map((q) => ({ question: q, answer: '' })), path: STUDIO.framework.frameworkSource, name: STUDIO.framework.frameworkSource, topic: 'Framework',
+    followUps: it.followUps.map((q) => ({ question: q, answer: '' })), path: STUDIO.frameworkSource, name: STUDIO.frameworkSource, topic: 'Framework',
   })), ...support.items, ...support.cases.map((c) => ({ ...c, question: c.title, answer: c.tasks.filter((t) => t.answer).map((t) => t.question + '\n' + t.answer).join('\n\n') }))];
   if (!list.length) { alert('No indexed items matched this term.'); return; }
   startPractice(list, 'JD term: ' + term, 'jd');
@@ -747,7 +750,7 @@ function studioBuildMockPool(modulePref, topic) {
     id: it.id, kind: 'framework', question: it.question,
     answer: [it.testing, it.how, it.story].filter(Boolean).join('\n\n'),
     followUps: it.followUps.map((q) => ({ question: q, answer: '' })),
-    path: STUDIO.framework.frameworkSource, name: STUDIO.framework.frameworkSource, topic: 'Universal core',
+    path: STUDIO.frameworkSource, name: STUDIO.frameworkSource, topic: 'Universal core',
   })));
   if (modulePref === 'all' || modulePref === 'framework') pool.push(...fwItems);
   if (modulePref === 'all' || modulePref === 'question' || modulePref === 'technical' || modulePref === 'situational') {
@@ -909,13 +912,13 @@ function studioHomeHTML() {
   const next = firstUnpracticed();
   return `<div class="studio-hero">
     <div>
-      <div class="readlabel">Built from ${STUDIO.stats.sourcesIndexed} indexed repository sources + ${studioEscape(STUDIO.framework.frameworkSource)}</div>
+      <div class="readlabel">Built from ${STUDIO.stats.sourcesIndexed} indexed repository sources + ${studioEscape(STUDIO.frameworkSource)}</div>
       <h2>Interview Practice Studio</h2>
       <p>Structured practice across the PDF's interview framework, the BA question bank, technical sets, case studies and situational prompts. All question text and answers come from the repository's own extracted sources — nothing is invented. Progress is saved in this browser only and does not sync across devices.</p>
     </div>
     <div class="studio-hero-actions">
       ${next ? `<button class="smallbtn primary" type="button" onclick="studioContinue()">Continue practice →</button>` : ''}
-      <a class="smallbtn" href="${studioUrl(STUDIO.framework.frameworkSource)}" target="_blank" rel="noopener">Open ${studioEscape(STUDIO.framework.frameworkSource)} ↗</a>
+      <a class="smallbtn" href="${studioUrl(STUDIO.frameworkSource)}" target="_blank" rel="noopener">Open ${studioEscape(STUDIO.frameworkSource)} ↗</a>
     </div>
   </div>
   <div class="studio-stats">
