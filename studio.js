@@ -247,17 +247,17 @@ function runnerHTML() {
   return `<article class="studio-runner">
     <div class="runner-top">
       <b>${studioEscape(r.title)} · question ${r.at + 1} of ${r.list.length}</b>
-      <span>${hasAnswer(item) ? 'Source answer text available' : 'No paired answer in source — open the original file'}</span>
+    <span>${item.generated ? 'Custom prompt based on this JD' : hasAnswer(item) ? 'Source answer text available' : 'No paired answer in source — open the original file'}</span>
     </div>
     <div class="practice-progress"><span style="width:${pct}%"></span></div>
     <div class="tagrow">
-      <span class="tag">${studioEscape(item.kind === 'question' ? 'BA question' : item.kind === 'technical' ? 'Technical' : 'Situational')}</span>
+      <span class="tag">${studioEscape(item.generated ? 'JD practice' : item.kind === 'question' ? 'BA question' : item.kind === 'technical' ? 'Technical' : 'Situational')}</span>
       ${item.topic ? `<span class="tag muted">${studioEscape(item.topic)}</span>` : ''}
       ${practiced ? '<span class="tag">Practiced ✓</span>' : ''}
       ${saved ? '<span class="tag muted">Saved ☆</span>' : ''}
       ${status ? `<span class="tag ${status === 'work' ? 'warn' : ''}">${status === 'know' ? 'Know it' : status === 'review' ? 'Review' : 'Needs work'}</span>` : ''}
     </div>
-    <div class="runner-source">${studioEscape(item.name)}${locator} · <a href="${studioUrl(item.path)}" target="_blank" rel="noopener">open original source ↗</a></div>
+    <div class="runner-source">${item.generated ? 'Built from the role details and requirements in your JD.' : `${studioEscape(item.name)}${locator} · <a href="${studioUrl(item.path)}" target="_blank" rel="noopener">open original source ↗</a>`}</div>
     <div class="runner-question">${studioEscape(item.question)}</div>
     <label class="studio-answer-label" for="studioAnswer">Your answer</label>
     <textarea id="studioAnswer" class="studio-answer" placeholder="Answer aloud first, then jot down the key points…">${studioEscape(stored)}</textarea>
@@ -271,7 +271,9 @@ function runnerHTML() {
       <button class="smallbtn" type="button" id="studioReveal" aria-expanded="${revealed}" onclick="studioToggleReveal()">${revealed ? 'Hide source answer' : 'Reveal source answer'}</button>
     </div>
     <div class="runner-block ${revealed ? '' : 'hide'}">
-      ${hasAnswer(item)
+      ${item.generated
+        ? '<div class="studio-note">This is a practice prompt. Build your answer from your own work examples; the tool does not supply a model answer.</div>'
+        : hasAnswer(item)
         ? `<h4>Source answer · verbatim excerpt</h4><pre class="runner-pre">${studioEscape(item.answer)}</pre>`
         : `<div class="studio-note">No paired answer text was found after this prompt in the extracted source. Inspect the original file above.</div>`}
       ${followUps.length && revealed ? `<h4 style="margin-top:12px">Likely follow-ups from the same source</h4><ul class="fw-followups">${followUps.map((f) => `<li>${studioEscape(f.question)}${f.answer ? ` — <span class="studio-note">${studioEscape(f.answer.slice(0, 400))}${f.answer.length > 400 ? ' …' : ''}</span>` : ''}</li>`).join('')}</ul>` : ''}
@@ -289,7 +291,7 @@ function runnerHTML() {
       <button class="smallbtn" type="button" onclick="studioExitRunner()">Back to list</button>
       <button class="smallbtn primary" type="button" onclick="studioMove(1)" ${r.at === r.list.length - 1 ? 'disabled' : ''}>Next →</button>
     </div>
-    <p class="studio-note">Question and answer text come from the linked repository source. Opening a question does not mark it practiced — use the buttons above.</p>
+    <p class="studio-note">${item.generated ? 'Answer with truthful examples from your experience. Opening a prompt does not mark it practiced — use the buttons above.' : 'Question and answer text come from the linked repository source. Opening a question does not mark it practiced — use the buttons above.'}</p>
   </article>`;
 }
 
@@ -569,94 +571,294 @@ function studioCloseCase() { studioState.caseOpen = null; studioState.reveal = n
 
 const JD_SYNONYMS = {
   'business analysis': ['business analysis', 'business analyst'],
-  'brd / frs': ['brd', 'frs', 'business requirements document', 'functional requirements'],
+  'brd / frs': ['brd', 'frd', 'frs', 'business requirements document', 'functional requirements'],
   'jira / confluence': ['jira', 'confluence'],
-  'uat / sit': ['uat', 'sit', 'user acceptance', 'system integration test'],
+  'uat / sit': ['uat', 'user acceptance', 'system integration test'],
   'api basics': ['api', 'rest', 'http', 'endpoint'],
   'rtm (traceability)': ['rtm', 'traceability', 'trace matrix'],
   'acceptance criteria': ['acceptance criteria', 'ac ', 'given.when.then'],
   'user stories': ['user stor', 'story writing'],
   'gap analysis': ['gap analysis', 'as-is', 'to-be'],
-  'sql': ['sql', ' joins', 'queries', 'database'],
+  'sql': ['sql'],
   'bpmn': ['bpmn', 'process map', 'process model', 'visio'],
   'moscow': ['moscow', 'prioriti'],
   'power bi': ['power bi', 'dax', 'power pivot'],
   'excel': ['excel', 'pivot', 'vba', 'power query'],
+  'requirements gathering & elicitation': ['requirements gathering', 'requirement gathering', 'gathering requirements', 'requirements elicitation', 'elicitation'],
+  'functional specifications': ['functional specification', 'functional specifications', 'functional requirements'],
+  'use cases': ['use case', 'use cases'],
+  'process workflows': ['process workflow', 'process workflows', 'workflow', 'workflows', 'process flow', 'process mapping'],
+  'stakeholder management': ['stakeholder management'],
+  'meetings & workshops': ['stakeholder meeting', 'stakeholder meetings', 'workshop', 'workshops'],
+  'cross-functional delivery': ['coordinate with developers', 'developers and project managers', 'project manager coordination'],
+  'communication': ['communication'],
+  'telecom domain': ['telecom', 'telecommunications', 'telco'],
+  'data analysis': ['data analysis', 'data analytics'],
+  'test cases & issue tracking': ['test case', 'test cases', 'issue tracking', 'track issues', 'defect tracking'],
+  'agile / project delivery': ['agile', 'project delivery'],
+  'process improvement': ['process improvement', 'continuous improvement'],
+  'analytical & problem solving': ['analytical', 'problem-solving', 'problem solving'],
+  'business documentation': ['business documentation', 'user manual', 'user manuals', 'process document', 'process documents'],
 };
 
-function jdTermsFromText(text) {
-  const lower = text.toLowerCase();
-  const found = [];
-  const seen = new Set();
-  const consider = (term) => {
-    const key = term.toLowerCase();
-    if (seen.has(key)) return;
-    seen.add(key);
-    const syns = JD_SYNONYMS[key] || [key];
-    const count = syns.reduce((n, s) => n + (lower.split(s).length - 1), 0);
-    if (count > 0) found.push({ term, hits: count });
-  };
-  (STUDIO.jdTerms || []).forEach(consider);
-  Object.keys(JD_SYNONYMS).forEach(consider);
-  // Extra candidate tokens: standalone capitalized words / acronyms of length >= 3
-  const stop = new Set(['and', 'the', 'for', 'with', 'you', 'our', 'will', 'are', 'has', 'have', 'this', 'that', 'your', 'must', 'should', 'years', 'experience', 'working', 'role', 'team', 'business', 'analyst', 'analysts', 'requirements', 'required', 'prefer', 'plus', 'good', 'strong', 'ability', 'etc', 'including', 'include', 'such', 'from', 'within', 'who', 'what', 'when', 'all', 'any', 'own', 'work', 'job', 'position', 'candidate', 'looking', 'need', 'needs', 'help', 'build', 'builds', 'using', 'used', 'use', 'tool', 'tools']);
-  const caps = text.match(/\b[A-Z][A-Za-z+]{2,}\b|\b[A-Z]{2,}\b/g) || [];
-  caps.forEach((w) => { if (!stop.has(w.toLowerCase())) consider(w); });
-  return found.sort((a, b) => b.hits - a.hits);
+const JD_CHECKLIST_RULES = [
+  { category: 'Business analysis', label: 'Business analysis experience', supportTerm: 'business analysis', matches: ['business analysis', 'business analyst'] },
+  { category: 'Requirements & documentation', label: 'Requirements gathering & elicitation', supportTerm: 'requirements gathering & elicitation', matches: ['requirement gathering', 'requirements gathering', 'gathering requirements', 'elicitation'] },
+  { category: 'Requirements & documentation', label: 'BRD / FRD', supportTerm: 'brd / frs', matches: ['brd', 'frd', 'business requirements document', 'functional requirements document'] },
+  { category: 'Requirements & documentation', label: 'Functional specifications', supportTerm: 'functional specifications', matches: ['functional specification', 'functional specifications', 'functional spec'] },
+  { category: 'Requirements & documentation', label: 'Use cases', supportTerm: 'use cases', matches: ['use case', 'use cases'] },
+  { category: 'Requirements & documentation', label: 'Process workflows', supportTerm: 'process workflows', matches: ['process workflow', 'process workflows', 'workflow', 'workflows', 'process flow'] },
+  { category: 'Requirements & documentation', label: 'Business documentation & user manuals', supportTerm: 'business documentation', matches: ['business documentation', 'user manual', 'process document'] },
+  { category: 'Stakeholders & delivery', label: 'Stakeholder management', supportTerm: 'stakeholder management', matches: ['stakeholder management', 'stakeholder', 'stakeholders'] },
+  { category: 'Stakeholders & delivery', label: 'Meetings & workshops', supportTerm: 'meetings & workshops', matches: ['stakeholder meeting', 'stakeholder meetings', 'workshop', 'workshops'] },
+  { category: 'Stakeholders & delivery', label: 'Developer / project manager coordination', supportTerm: 'cross-functional delivery', matches: ['developer', 'developers', 'project manager', 'project managers', 'coordinate with'] },
+  { category: 'Stakeholders & delivery', label: 'Communication', supportTerm: 'communication', matches: ['communication'] },
+  { category: 'Data & tools', label: 'Excel', supportTerm: 'excel', matches: ['excel', 'pivot table', 'power query', 'vba'] },
+  { category: 'Data & tools', label: 'SQL', supportTerm: 'sql', matches: ['sql', 'database query', 'database queries'] },
+  { category: 'Data & tools', label: 'Data analysis', supportTerm: 'data analysis', matches: ['data analysis', 'data analytics', 'analyze data', 'analyse data'] },
+  { category: 'Testing & delivery', label: 'UAT', supportTerm: 'uat / sit', matches: ['uat', 'user acceptance testing', 'user acceptance test'] },
+  { category: 'Testing & delivery', label: 'Test cases & issue tracking', supportTerm: 'test cases & issue tracking', matches: ['test case', 'test cases', 'track issues', 'issue tracking'] },
+  { category: 'Testing & delivery', label: 'Agile / project delivery', supportTerm: 'agile / project delivery', matches: ['agile', 'project delivery'] },
+  { category: 'Process improvement & strengths', label: 'Process improvement', supportTerm: 'process improvement', matches: ['process improvement', 'process improvements', 'improve processes'] },
+  { category: 'Process improvement & strengths', label: 'Analytical & problem-solving skills', supportTerm: 'analytical & problem solving', matches: ['analytical', 'problem-solving', 'problem solving'] },
+  { category: 'Domain knowledge', label: 'Telecom domain', supportTerm: 'telecom domain', matches: ['telecom', 'telecommunications', 'telco'] },
+];
+
+function jdHasPhrase(text, phrase) {
+  const escaped = phrase.trim().toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+  return new RegExp(`(^|[^a-z0-9])(${escaped})(?=$|[^a-z0-9])`, 'i').test(text);
 }
 
+function jdRequirementsFromText(text) {
+  const lower = String(text || '').toLowerCase();
+  const lines = String(text || '').split(/\r?\n/);
+  const facts = {};
+  ['role', 'experience', 'location'].forEach((key) => {
+    const match = String(text || '').match(new RegExp(`^\\s*${key}\\s*:\\s*(.+)$`, 'im'));
+    if (match) facts[key] = match[1].trim();
+  });
+  const occurrences = new Map();
+  let section = 'general';
+  lines.forEach((line) => {
+    const heading = line.trim().replace(/:$/, '').toLowerCase();
+    if (/^(required skills|requirements|qualifications|what you bring)$/.test(heading)) section = 'required';
+    else if (/^(key responsibilities|responsibilities|what you will do)$/.test(heading)) section = 'responsibility';
+    else if (/^(about the role|role overview|job description)$/.test(heading)) section = 'general';
+    JD_CHECKLIST_RULES.forEach((rule) => {
+      if (rule.matches.some((phrase) => jdHasPhrase(line.toLowerCase(), phrase))) {
+        const ranks = { general: 1, responsibility: 2, required: 3 };
+        occurrences.set(rule.label, Math.max(occurrences.get(rule.label) || 0, ranks[section]));
+      }
+    });
+  });
+  const requirements = JD_CHECKLIST_RULES.filter((rule) => rule.matches.some((phrase) => jdHasPhrase(lower, phrase)))
+    .map((rule, index) => {
+      let weight = occurrences.get(rule.label) || 1;
+      if (rule.category === 'Domain knowledge' && weight < 2) weight = 2;
+      const emphasis = weight === 3 ? 'Required skill' : rule.category === 'Domain knowledge' ? 'Core role requirement' : weight === 2 ? 'Key responsibility' : 'JD requirement';
+      return { id: `jd-req-${index + 1}`, category: rule.category, label: rule.label, supportTerm: rule.supportTerm, emphasis, emphasisWeight: weight, checked: true, custom: false };
+    });
+  return { facts, requirements };
+}
+
+const JD_RELATED_TOPICS = {
+  'business analysis': ['General BA', 'Systems analysis'],
+  'requirements gathering & elicitation': ['Requirements & elicitation', 'Stakeholder management'],
+  'brd / frs': ['Requirements & elicitation', 'Documentation'],
+  'functional specifications': ['Documentation', 'Systems analysis'],
+  'use cases': ['Requirements & elicitation', 'Systems analysis', 'Documentation'],
+  'process workflows': ['Process mapping', 'Documentation'],
+  'business documentation': ['Documentation'],
+  'stakeholder management': ['Stakeholder management', 'Change management'],
+  'meetings & workshops': ['Stakeholder management', 'Change management'],
+  'cross-functional delivery': ['Agile & Scrum', 'Systems analysis', 'Change management'],
+  'communication': ['Stakeholder management', 'Change management'],
+  'excel': ['Data analysis'],
+  'sql': ['Data analysis', 'Systems analysis'],
+  'data analysis': ['Data analysis', 'Systems analysis'],
+  'uat / sit': ['UAT & testing'],
+  'test cases & issue tracking': ['UAT & testing', 'Traceability'],
+  'agile / project delivery': ['Agile & Scrum', 'Change management'],
+  'process improvement': ['Process mapping', 'Change management'],
+  'analytical & problem solving': ['Data analysis', 'Systems analysis'],
+  'telecom domain': [],
+};
+
+function jdPhraseIndex(text, phrase) {
+  const normalized = String(text || '').replace(/\s+/g, ' ').trim();
+  const escaped = phrase.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+  const match = normalized.match(new RegExp(`(^|[^a-z0-9])(${escaped})(?=$|[^a-z0-9])`, 'i'));
+  return match ? match.index + match[1].length : -1;
+}
+
+function jdEvidenceExcerpt(text, index, phrase) {
+  const clean = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!clean) return '';
+  const at = Math.max(0, index);
+  const start = Math.max(0, at - 75);
+  const end = Math.min(clean.length, at + Math.max(phrase.length, 1) + 115);
+  return `${start ? '…' : ''}${clean.slice(start, end)}${end < clean.length ? '…' : ''}`;
+}
+
+const jdSupportCache = new Map();
+
 function jdSupportFor(term) {
-  const syns = JD_SYNONYMS[term.toLowerCase()] || [term.toLowerCase()];
-  const match = (hay) => syns.some((s) => hay.includes(s));
-  const items = STUDIO.items.filter((x) => match((x.question + ' ' + x.answer + ' ' + x.topic).toLowerCase()));
-  const cases = STUDIO.cases.filter((c) => match((c.title + ' ' + c.prompt + ' ' + c.topic).toLowerCase()));
-  const framework = STUDIO.framework.parts.flatMap((p) => p.items).filter((it) => match((it.question + ' ' + it.testing + ' ' + it.how + ' ' + it.story).toLowerCase()));
-  const total = items.length + cases.length + framework.length;
-  const level = total >= 5 ? 'covered' : total > 0 ? 'partial' : 'none';
-  return { items, cases, framework, total, level };
+  const key = term.toLowerCase();
+  if (jdSupportCache.has(key)) return jdSupportCache.get(key);
+  const aliases = (JD_SYNONYMS[key] || [key]).map((s) => s.trim()).filter(Boolean);
+  const relatedTopics = JD_RELATED_TOPICS[key] || [];
+  const evidence = [];
+  const add = (record, fields, meta) => {
+    const text = fields.filter(Boolean).join(' ');
+    const phrase = aliases.find((alias) => jdPhraseIndex(text, alias) >= 0);
+    const direct = !!phrase;
+    if (!direct && !relatedTopics.includes(meta.topic)) return;
+    const evidenceText = direct ? text : (meta.preview || text);
+    const matchAt = direct ? jdPhraseIndex(evidenceText, phrase) : 0;
+    evidence.push({
+      id: record.id || meta.path,
+      kind: meta.kind,
+      path: meta.path,
+      name: meta.name,
+      topic: meta.topic,
+      relation: direct ? 'direct' : 'related',
+      matchedText: direct ? phrase : meta.topic,
+      excerpt: jdEvidenceExcerpt(evidenceText, matchAt, direct ? phrase : ''),
+      record,
+    });
+  };
+  STUDIO.items.forEach((x) => add(x, [x.question, x.answer], { kind: x.kind, path: x.path, name: x.name, topic: x.topic, preview: x.question }));
+  STUDIO.cases.forEach((c) => add(c, [c.title, c.prompt], { kind: 'case', path: c.path, name: c.name, topic: c.topic, preview: c.title + ': ' + c.prompt }));
+  STUDIO.framework.parts.flatMap((p) => p.items).forEach((it) => add(it, [it.question, it.testing, it.how, it.story], { kind: 'framework', path: STUDIO.frameworkSource, name: STUDIO.frameworkSource, topic: 'Framework', preview: it.question }));
+  const directEvidence = evidence.filter((e) => e.relation === 'direct');
+  const relatedEvidence = evidence.filter((e) => e.relation === 'related');
+  const matching = evidence.filter((e) => e.relation === 'direct');
+  const related = evidence.filter((e) => e.relation === 'related');
+  const items = STUDIO.items.filter((x) => matching.some((e) => e.id === x.id) || related.some((e) => e.id === x.id));
+  const cases = STUDIO.cases.filter((x) => matching.some((e) => e.id === x.id) || related.some((e) => e.id === x.id));
+  const framework = STUDIO.framework.parts.flatMap((p) => p.items).filter((x) => matching.some((e) => e.id === x.id) || related.some((e) => e.id === x.id));
+  const directTotal = directEvidence.length;
+  const relatedTotal = relatedEvidence.length;
+  const result = {
+    items, cases, framework, evidence, directEvidence, relatedEvidence,
+    directTotal, relatedTotal, total: directTotal + relatedTotal,
+    level: directTotal ? 'direct' : relatedTotal ? 'related' : 'none',
+  };
+  jdSupportCache.set(key, result);
+  return result;
+}
+
+function jdEvidenceHTML(records, relation) {
+  if (!records.length) return '';
+  const title = relation === 'direct' ? 'Direct phrase matches' : 'Related material by topic';
+  return `<div class="jd-evidence"><b>${title} (${records.length})</b>${records.slice(0, 3).map((e) => `<div class="jd-evidence-item"><small>${studioEscape(e.name)}${e.topic ? ` · ${studioEscape(e.topic)}` : ''} · matched ${studioEscape(e.matchedText)}</small><p>${studioEscape(e.excerpt)}</p><a href="${studioUrl(e.path)}" target="_blank" rel="noopener">Open source ↗</a></div>`).join('')}${records.length > 3 ? `<small class="studio-note">Showing 3 of ${records.length} matching sources.</small>` : ''}</div>`;
+}
+
+function jdPriorityFor(result, support, confidence) {
+  const confidenceWeight = { unrated: 2, 'needs-work': 3, 'some-practice': 2, ready: 1 }[confidence] || 2;
+  const evidenceWeight = support.level === 'none' ? 1 : support.level === 'related' ? 0.5 : 0;
+  const score = (result.emphasisWeight || 1) * confidenceWeight + evidenceWeight;
+  const priority = score >= 6 ? 'High' : score >= 3 ? 'Medium' : 'Low';
+  const confidenceLabel = { unrated: 'Confidence not rated', 'needs-work': 'You marked this as needing practice', 'some-practice': 'You marked this as needing more practice', ready: 'You marked this as ready' }[confidence] || 'Confidence not rated';
+  const evidenceLabel = support.level === 'none' ? 'No indexed source matched' : support.level === 'related' ? 'Only related topic material was found' : 'Direct source material is available';
+  const nextStep = support.level === 'direct'
+    ? 'Practice a matching prompt, then prepare a real example.'
+    : support.level === 'related'
+      ? 'Review related sources, then prepare a role-specific example.'
+      : 'Prepare a personal example and verify it against the JD.';
+  return { score, priority, reasons: [result.emphasis || 'JD requirement', confidenceLabel, evidenceLabel], nextStep };
+}
+
+function jdPlanHTML(results) {
+  const confidence = studioLS('baStudioJdConfidence', {});
+  const notes = studioLS('baStudioJdNotes', {});
+  const checklist = studioLS('baStudioJdChecklist', null);
+  const checklistRequirements = checklist && Array.isArray(checklist.requirements) ? checklist.requirements : [];
+  const ranked = results.map((r) => {
+    // Older saved analyses may predate emphasis fields; restore them from the editable checklist.
+    const meta = checklistRequirements.find((item) => item.id === r.id)
+      || checklistRequirements.find((item) => item.label === r.term || item.supportTerm === r.supportTerm);
+    const enriched = {
+      ...r,
+      emphasis: r.emphasis || (meta && meta.emphasis),
+      emphasisWeight: r.emphasisWeight || (meta && meta.emphasisWeight) || 1,
+    };
+    const support = jdSupportFor(r.supportTerm || r.term);
+    const key = r.id || r.term;
+    return { r: enriched, support, key, ...jdPriorityFor(enriched, support, confidence[key] || 'unrated') };
+  }).sort((a, b) => b.score - a.score);
+  if (!ranked.length) return '';
+  const readyCount = ranked.filter(({ key }) => confidence[key] === 'ready').length;
+  const ratedCount = ranked.filter(({ key }) => ['needs-work', 'some-practice', 'ready'].includes(confidence[key])).length;
+  const exampleCount = ranked.filter(({ r }) => String((notes[r.term] || {}).evidence || '').trim()).length;
+  const readyPercent = Math.round((readyCount / ranked.length) * 100);
+  const row = (item, index) => `<li class="jd-plan-item"><span class="jd-plan-rank">${index + 1}</span><div class="jd-plan-main"><div class="jd-plan-title"><b>${studioEscape(item.r.term)}</b><span class="jd-priority ${item.priority.toLowerCase()}">${item.priority} priority</span></div><p>${item.nextStep}</p><small>${item.reasons.map(studioEscape).join(' · ')}</small><a href="#jd-result-${String(item.r.id || item.r.term).replace(/[^a-z0-9]+/gi, '-')}">Open requirement details ↓</a></div></li>`;
+  return `<section class="jd-plan" id="jdPrepPlan"><div class="jd-plan-head"><div><h3>Your preparation order</h3><p>Prioritized from JD emphasis, your confidence, and repository evidence. Change a confidence rating to update this order.</p><div class="studio-actions"><button class="smallbtn primary" type="button" onclick="studioStartJdPractice('questions')">Start JD-specific practice · 6 prompts</button><button class="smallbtn" type="button" onclick="studioStartJdPractice('case')">Run complete case exercise</button><button class="smallbtn" type="button" onclick="studioStartJdPractice('seniority-domain')">Senior BA & telecom drills</button></div></div></div><section class="jd-readiness" aria-label="Persistent readiness tracker"><div class="jd-readiness-top"><b>Readiness tracker</b><span>${readyCount} of ${ranked.length} marked ready</span></div><div class="jd-readiness-bar" role="progressbar" aria-label="Requirements self-rated ready" aria-valuemin="0" aria-valuemax="${ranked.length}" aria-valuenow="${readyCount}"><span style="width:${readyPercent}%"></span></div><div class="jd-readiness-stats"><span>${ratedCount} confidence ratings set</span><span>${exampleCount} personal work examples saved</span></div><small>Saved in this browser. Mark a requirement Ready only when you can support it with a real example.</small></section><ol class="jd-plan-list">${ranked.slice(0, 5).map(row).join('')}</ol>${ranked.length > 5 ? `<details class="jd-plan-more"><summary>Show remaining ${ranked.length - 5} requirements</summary><ol class="jd-plan-list" start="6">${ranked.slice(5).map((item, index) => row(item, index + 5)).join('')}</ol></details>` : ''}</section>`;
 }
 
 function jdPaneHTML() {
+  // Practice launched from JD prep stores its session in the shared runner state.
+  // Render that session here just as the other practice panes do.
+  if (studioState.runner) return runnerHTML();
   const last = studioLS('baStudioJdText', '');
   const notes = studioLS('baStudioJdNotes', {});
   const results = studioLS('baStudioJdResult', null);
+  const checklist = studioLS('baStudioJdChecklist', null);
+  const facts = checklist && checklist.facts || {};
   return `<div class="studio-hero">
     <div>
       <div class="readlabel">Module F · powered by the PDF's Part 3 tool ladder</div>
       <h2>Job description preparation</h2>
-      <p>Paste a job description. Skills and tools named in it are matched against the indexed repository material. Coverage labels only reflect what exists in this repository — nothing is invented.</p>
+      <p>Paste the job description, review the extracted requirements, then choose which ones to prepare. Role details stay separate from skill requirements.</p>
     </div>
   </div>
   <div class="panel">
     <label class="studio-answer-label" for="jdText">Job description</label>
     <textarea id="jdText" class="jd-input" placeholder="Paste the job description here…">${studioEscape(last)}</textarea>
     <div class="studio-actions">
-      <button class="smallbtn primary" type="button" onclick="studioAnalyzeJd()">Analyze against repository</button>
+      <button class="smallbtn primary" type="button" onclick="studioBuildJdChecklist()">Build editable checklist</button>
       <button class="smallbtn" type="button" onclick="studioClearJd()">Clear</button>
     </div>
+    ${checklist ? `<section class="jd-checklist"><div class="jd-checklist-head"><div><h3>Review your JD checklist</h3><p class="studio-note">Edit a requirement, uncheck anything you do not want to prepare, or add your own.</p></div><button class="smallbtn" type="button" onclick="studioBuildJdChecklist()">Rebuild from JD</button></div>
+      ${Object.keys(facts).length ? `<div class="jd-facts">${Object.entries(facts).map(([key, value]) => `<span><b>${studioEscape(key)}:</b> ${studioEscape(value)}</span>`).join('')}</div>` : ''}
+      ${checklist.requirements.length ? `<div class="jd-checklist-groups">${[...new Set(checklist.requirements.map((r) => r.category))].map((category) => `<div class="jd-checklist-group"><h4>${studioEscape(category)}</h4>${checklist.requirements.map((r, index) => r.category === category ? `<label class="jd-check-row"><input type="checkbox" data-jd-selected="${index}" ${r.checked ? 'checked' : ''}><input class="jd-requirement-edit" aria-label="Edit ${studioEscape(r.label)}" data-jd-label="${index}" value="${studioEscape(r.label)}"><button class="smallbtn" type="button" onclick="studioRemoveJdRequirement(${index})" aria-label="Remove ${studioEscape(r.label)}">Remove</button></label>` : '').join('')}</div>`).join('')}</div>` : '<p class="studio-note">No checklist items detected. Add the requirements you want to prepare.</p>'}
+      <div class="jd-add-row"><input id="jdCustomRequirement" placeholder="Add a requirement, e.g. Telecom billing"><button class="smallbtn" type="button" onclick="studioAddJdRequirement()">Add requirement</button></div>
+      <div class="studio-actions"><button class="smallbtn primary" type="button" onclick="studioAnalyzeJd()">Analyze selected requirements</button></div>
+    </section>` : `<p class="studio-note">Build a checklist to extract role details and the skills or responsibilities found in the JD. You can edit the checklist before analyzing it.</p>`}
     ${results ? jdResultsHTML(results, notes) : `<p class="studio-note">Nothing analyzed yet. The PDF's ladder for each matched term: (1) one-line definition, (2) where you used it for real, (3) one trade-off or limitation, (4) one thing that went wrong and how you handled it — fill the notes with your own experience.</p>`}
   </div>`;
 }
 
 function jdResultsHTML(results, notes) {
   const cols = [
-    { key: 'covered', title: 'Covered by the repository', note: '5 or more indexed practice items mention this term.' },
-    { key: 'partial', title: 'Partial coverage', note: 'Some related material exists, but it is thin.' },
-    { key: 'none', title: 'No source material found', note: 'Nothing in the repository matched — prepare this one yourself using the ladder.' },
+    { key: 'direct', title: 'Direct source matches', note: 'The source text contains this requirement or a configured synonym.' },
+    { key: 'related', title: 'Related by topic', note: 'The source is filed under a related BA topic, but the phrase was not found.' },
+    { key: 'none', title: 'No indexed material found', note: 'No direct phrase or related topic matched. Prepare this using your own examples.' },
   ];
-  return `<p class="studio-count">${results.length} term${results.length === 1 ? '' : 's'} detected in the pasted description.</p>
+  const assessed = results.map((r) => ({ r, support: jdSupportFor(r.supportTerm || r.term) }));
+  return `<p class="studio-count">${results.length} selected requirement${results.length === 1 ? '' : 's'} analyzed.</p>
+  ${jdPlanHTML(results)}
   <div class="jd-coverage">${cols.map((col) => {
-    const terms = results.filter((r) => r.level === col.key);
+    const terms = assessed.filter(({ support }) => support.level === col.key);
     return `<div class="jd-col"><h3>${col.title} (${terms.length})</h3><p class="jd-col-note">${col.note}</p>
-      ${terms.length ? terms.map((r) => {
-        const support = jdSupportFor(r.term);
+      ${terms.length ? terms.map(({ r, support }) => {
         const note = notes[r.term] || {};
-        return `<div class="jd-term">
-          <b>${studioEscape(r.term)}</b> <small>${support.total ? support.total + ' indexed item' + (support.total === 1 ? '' : 's') : 'no matches'} · ${r.hits} mention${r.hits === 1 ? '' : 's'} in the JD</small>
+        const confidence = studioLS('baStudioJdConfidence', {});
+        const confidenceKey = r.id || r.term;
+        return `<div class="jd-term" id="jd-result-${String(confidenceKey).replace(/[^a-z0-9]+/gi, '-')}">
+          <b>${studioEscape(r.term)}</b> <small>${support.directTotal} direct matches · ${support.relatedTotal} related items by topic</small>
           <div class="item-actions">
-            ${support.total ? `<button class="smallbtn primary" type="button" onclick="studioPracticeJdTerm('${studioEscape(r.term)}')">Practice related (${support.total})</button>` : ''}
+            ${support.total ? `<button class="smallbtn primary" type="button" onclick="studioPracticeJdTerm('${studioEscape(r.supportTerm || r.term)}')">Practice matching material (${support.total})</button>` : ''}
             <a class="smallbtn" href="#studio" onclick="studioJdJump('${studioEscape(r.term)}')">Ladder notes ↓</a>
           </div>
+          <label class="jd-confidence">Your confidence<select data-jd-confidence="${studioEscape(confidenceKey)}">
+            <option value="unrated" ${(confidence[confidenceKey] || 'unrated') === 'unrated' ? 'selected' : ''}>Not rated</option>
+            <option value="needs-work" ${confidence[confidenceKey] === 'needs-work' ? 'selected' : ''}>Needs practice</option>
+            <option value="some-practice" ${confidence[confidenceKey] === 'some-practice' ? 'selected' : ''}>Some practice</option>
+            <option value="ready" ${confidence[confidenceKey] === 'ready' ? 'selected' : ''}>Ready</option>
+          </select></label>
+          ${jdEvidenceHTML(support.directEvidence, 'direct')}
+          ${jdEvidenceHTML(support.relatedEvidence, 'related')}
           <div class="ladder-steps" id="jd-notes-${studioEscape(r.term).replace(/[^a-z0-9]+/gi, '-')}">
             <label>1 · One-line definition<input data-jd-note="${studioEscape(r.term)}" data-step="definition" value="${studioEscape(note.definition || '')}" placeholder="Your definition, in your words"></label>
             <label>2 · Where you used it for real<textarea data-jd-note="${studioEscape(r.term)}" data-step="evidence" rows="2" placeholder="Real example from your work (do not invent one)">${studioEscape(note.evidence || '')}</textarea></label>
@@ -670,15 +872,69 @@ function jdResultsHTML(results, notes) {
 }
 
 function studioAnalyzeJd() {
+  studioSaveJdChecklist();
+  const checklist = studioLS('baStudioJdChecklist', null);
+  const requirements = checklist && checklist.requirements.filter((r) => r.checked && r.label.trim());
+  if (!requirements || !requirements.length) { alert('Select at least one JD requirement to analyze.'); return; }
+  const terms = requirements.map((r) => ({ id: r.id, term: r.label.trim(), supportTerm: r.supportTerm || r.label.trim(), category: r.category, emphasis: r.emphasis || 'JD requirement', emphasisWeight: r.emphasisWeight || 1, level: jdSupportFor(r.supportTerm || r.label.trim()).level }));
+  studioSave('baStudioJdResult', terms);
+  studioRenderPane();
+}
+function studioBuildJdChecklist() {
   const text = ($s('#jdText') || {}).value || '';
   if (!text.trim()) { alert('Paste a job description first.'); return; }
   studioSave('baStudioJdText', text);
-  const terms = jdTermsFromText(text).map((t) => ({ ...t, level: jdSupportFor(t.term).level }));
-  studioSave('baStudioJdResult', terms);
+  studioSave('baStudioJdChecklist', jdRequirementsFromText(text));
+  studioSave('baStudioJdResult', null);
+  // Confidence belongs to the current JD; don't carry ratings into a new preparation plan.
+  studioSave('baStudioJdConfidence', {});
+  studioRenderPane();
+}
+function studioSaveJdChecklist() {
+  const checklist = studioLS('baStudioJdChecklist', null);
+  if (!checklist) return;
+  $$s('[data-jd-selected]').forEach((el) => { const item = checklist.requirements[Number(el.dataset.jdSelected)]; if (item) item.checked = el.checked; });
+  $$s('[data-jd-label]').forEach((el) => { const item = checklist.requirements[Number(el.dataset.jdLabel)]; if (item) item.label = el.value.trim() || item.label; });
+  studioSave('baStudioJdChecklist', checklist);
+}
+function bindJdChecklist() {
+  $$s('[data-jd-selected], [data-jd-label]').forEach((el) => {
+    el.addEventListener('change', studioSaveJdChecklist);
+    if (el.matches('[data-jd-label]')) el.addEventListener('input', studioSaveJdChecklist);
+  });
+}
+function bindJdPlanner() {
+  $$s('[data-jd-confidence]').forEach((el) => el.addEventListener('change', () => {
+    const ratings = studioLS('baStudioJdConfidence', {});
+    ratings[el.dataset.jdConfidence] = el.value;
+    studioSave('baStudioJdConfidence', ratings);
+    const host = $s('#jdPrepPlan');
+    if (host) host.outerHTML = jdPlanHTML(studioLS('baStudioJdResult', []));
+  }));
+}
+function studioRemoveJdRequirement(index) {
+  studioSaveJdChecklist();
+  const checklist = studioLS('baStudioJdChecklist', null);
+  if (!checklist) return;
+  checklist.requirements.splice(index, 1);
+  studioSave('baStudioJdChecklist', checklist);
+  studioSave('baStudioJdResult', null);
+  studioRenderPane();
+}
+function studioAddJdRequirement() {
+  studioSaveJdChecklist();
+  const field = $s('#jdCustomRequirement');
+  const label = field && field.value.trim();
+  if (!label) return;
+  const checklist = studioLS('baStudioJdChecklist', null) || { facts: {}, requirements: [] };
+  checklist.requirements.push({ id: `jd-custom-${Date.now()}`, category: 'Your added requirements', label, supportTerm: label, checked: true, custom: true });
+  studioSave('baStudioJdChecklist', checklist);
+  studioSave('baStudioJdResult', null);
   studioRenderPane();
 }
 function studioClearJd() {
   studioSave('baStudioJdText', '');
+  studioSave('baStudioJdChecklist', null);
   studioSave('baStudioJdResult', null);
   studioRenderPane();
 }
@@ -697,6 +953,43 @@ function studioPracticeJdTerm(term) {
   startPractice(list, 'JD term: ' + term, 'jd');
 }
 
+function studioStartJdPractice(mode) {
+  const results = studioLS('baStudioJdResult', []);
+  if (!results.length) return;
+  const jdText = studioLS('baStudioJdText', '');
+  const jdHash = Array.from(String(jdText)).reduce((hash, ch) => ((hash * 31) + ch.charCodeAt(0)) | 0, 7).toString(36);
+  const make = (id, question) => ({
+    id: `jd-custom-${jdHash}-${id}`, kind: 'question', generated: true, question, answer: '',
+    name: 'JD-specific practice', path: '', topic: 'Business Analyst · 10+ years',
+  });
+  if (mode === 'case') {
+    const prompt = `Complete case exercise — Telecom service activation and billing\n\nA Pune telecom operator has seen a rise in complaints from new enterprise customers: some services activate late, and the first invoice sometimes includes charges the customer does not recognize. The operations lead says handoffs between sales, provisioning, and billing are unclear. Developers and the project manager need a scoped change proposal. You are the senior Business Analyst.\n\nWork through these deliverables in order:\n1. Stakeholder discovery: list who you would meet, the questions you would ask, and how you would resolve conflicting definitions of “activated” and “billable.”\n2. Current and future process: describe the as-is handoffs, identify failure points, and outline a to-be workflow with decision points and exception paths.\n3. Requirements: write a concise business requirement, three functional requirements, two use cases, and measurable acceptance criteria. State assumptions and what is out of scope.\n4. Data analysis: identify the fields and sample checks you would use in Excel and SQL to compare order, activation, and invoice events. Explain how you would validate data quality and protect customer data.\n5. Delivery and UAT: propose a small Agile delivery sequence, UAT scenarios including negative cases, defect triage, and sign-off criteria.\n6. Recommendation: prioritize one process improvement, explain the expected benefit, and name the measure you would track after release.\n\nAnswer as if presenting to stakeholders. Separate confirmed facts from assumptions; use examples from your own experience only when describing work you have personally done.`;
+    startPractice([make('case', prompt)], 'JD complete case exercise', 'jd');
+    return;
+  }
+  const questions = [
+    ['discovery', 'You have 10+ years of BA experience. A telecom stakeholder asks for a “faster activation” solution but cannot agree on when activation is complete. How would you plan discovery, identify decision-makers, resolve the disagreement, and document an agreed measurable outcome?'],
+    ['specification', 'Using a telecom service activation change you know (or a clearly labeled hypothetical), explain how you would turn stakeholder needs into a BRD/FRD, functional specifications, use cases, and a process workflow. How would you keep them consistent as scope changes?'],
+    ['analysis', 'A telecom operations team reports a rise in delayed activations and first-invoice disputes. Describe the Excel checks and SQL analysis you would perform, the data you would request, and how you would validate that your findings are reliable.'],
+    ['delivery', 'Developers say a requested requirement is ambiguous and the project manager says the release date cannot move. How would you clarify the requirement, present options and trade-offs, and keep stakeholders aligned in an Agile delivery?'],
+    ['uat', 'How would you prepare and run UAT for a change spanning order capture, service provisioning, and billing? Give representative happy-path, exception, and regression scenarios, and explain how you would track defects through resolution and sign-off.'],
+    ['improvement', 'After release, activation delays improve but invoice disputes remain. How would you investigate the remaining process gap, recommend an improvement, update user and process documentation, and measure whether the change worked?'],
+  ];
+  if (mode === 'seniority-domain') {
+    const advanced = [
+      ['senior-governance', 'As a 10+ year Business Analyst on a telecom transformation, how would you set up requirements governance across business, operations, technology, and vendors? Explain traceability, decision rights, change control, and how you keep delivery moving without weakening control.'],
+      ['telecom-lifecycle', 'Walk through the customer and operational lifecycle for a new enterprise telecom service, from order capture through provisioning, activation, billing, and support. Where would you expect handoff or data risks, and how would you validate the actual process with subject matter experts?'],
+      ['telecom-kpis', 'A telecom leadership team reports poor service activation performance but teams use different definitions and dashboards. How would you agree operational definitions, select meaningful measures such as order-to-activation time and first-bill accuracy, validate the data, and turn the findings into decisions?'],
+      ['senior-tradeoffs', 'Two senior stakeholders disagree: one wants a broad platform change while operations needs a near-term fix for provisioning failures. How would you facilitate the decision, compare options by customer impact, risk, cost, and delivery dependency, and document the agreed trade-off?'],
+      ['telecom-uat', 'A release changes provisioning and billing integrations. What end-to-end telecom scenarios, failure and recovery paths, reconciliation checks, and operational readiness steps would you include in UAT? How would you decide whether a defect blocks release?'],
+      ['senior-coaching', 'How do you improve BA practice across a project team with uneven experience? Describe how you coach analysts on elicitation, specifications, stakeholder workshops, and documentation quality while remaining accountable for delivery outcomes.'],
+    ];
+    startPractice(advanced.map(([id, question]) => make(id, question)), 'Senior BA & telecom domain drills', 'jd');
+    return;
+  }
+  startPractice(questions.map(([id, question]) => make(id, question)), 'JD-specific practice', 'jd');
+}
+
 function bindJdNotes() {
   $$s('[data-jd-note]').forEach((el) => {
     el.addEventListener('change', () => {
@@ -705,6 +998,8 @@ function bindJdNotes() {
       notes[term] = notes[term] || {};
       notes[term][el.dataset.step] = el.value;
       studioSave('baStudioJdNotes', notes);
+      const host = $s('#jdPrepPlan');
+      if (host) host.outerHTML = jdPlanHTML(studioLS('baStudioJdResult', []));
     });
   });
 }
@@ -1006,6 +1301,8 @@ function studioRenderPane() {
   host.innerHTML = `<div class="studio-shell">${tabs}<div class="studio-pane active" id="studioPane">${body}</div></div>`;
   bindFilterBar(host);
   bindJdNotes();
+  bindJdChecklist();
+  bindJdPlanner();
   if (studioState.pane === 'mock' && studioLS('baStudioMockSession', null) && !studioLS('baStudioMockSession', null).finished) studioStartMockTimer();
   const crumb = $s('#crumb');
   if (crumb) crumb.textContent = 'Workspace / Interview Practice Studio / ' + (PANE_LABEL[studioState.pane] || 'Studio');
@@ -1045,6 +1342,7 @@ Object.assign(window, {
   studioToggleReveal, studioSubmitAnswer, studioToggleSave, studioTogglePracticed, studioRate,
   studioPracticeRelated, studioRateFramework, studioOpenCase, studioCloseCase, studioSaveCaseResponse,
   studioToggleCaseSave, studioToggleCaseReveal, studioAnalyzeJd, studioClearJd, studioJdJump, studioPracticeJdTerm,
+  studioBuildJdChecklist, studioRemoveJdRequirement, studioAddJdRequirement, studioStartJdPractice,
   studioBeginMock, studioMockMove, studioMockToggleReveal, studioMockRate, studioFinishMock, studioNewMock,
   studioContinue, studioOnShow,
 });
