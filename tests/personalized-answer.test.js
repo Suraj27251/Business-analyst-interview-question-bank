@@ -67,7 +67,7 @@ test('successful response sends retrieved profile evidence to Groq and returns s
     const providerRequest = { url, options, body: JSON.parse(options.body) };
     providerRequests.push(providerRequest);
     const content = providerRequests.length === 1
-      ? 'I mapped process improvement workflows and measured a reduction in support response time [E1].'
+      ? 'I mapped process improvement workflows and measured a reduction in support response time. [E1]'
       : 'PASS';
     return { ok: true, json: async () => ({ choices: [{ message: { content } }] }) };
   };
@@ -78,6 +78,8 @@ test('successful response sends retrieved profile evidence to Groq and returns s
   assert.equal(providerRequests[0].url, 'https://api.groq.com/openai/v1/chat/completions');
   assert.equal(providerRequests[0].options.headers.Authorization, 'Bearer test-key-never-returned');
   assert.equal(providerRequests[0].body.model, 'openai/gpt-oss-120b');
+  assert.equal(providerRequests[1].body.reasoning_effort, 'low');
+  assert.equal(providerRequests[1].body.max_completion_tokens, 128);
   assert.match(providerRequests[0].body.messages[0].content, /2 to 3 concise sentences/);
   const evidence = providerRequests[0].body.messages[1].content;
   assert.match(evidence, /Private candidate profile configured in the deployment/);

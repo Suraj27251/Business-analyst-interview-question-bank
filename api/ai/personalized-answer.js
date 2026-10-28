@@ -79,7 +79,9 @@ export default async function handler(req, res) {
     if (draft === 'INSUFFICIENT_EVIDENCE') return json(res, 422, { error: 'insufficient_evidence' });
 
     const evidenceIds = new Set(evidence.map((_, index) => `E${index + 1}`));
-    const sentences = draft.match(/[^.!?]+[.!?]?/g)?.filter((sentence) => sentence.trim()) || [];
+    // Citations may appear before punctuation ("claim [E1].") or after it
+    // ("claim. [E1]"). Treat a trailing citation as part of that sentence.
+    const sentences = draft.match(/[^.!?]+(?:[.!?]+(?:\s*\[E\d+\])*)?/g)?.filter((sentence) => sentence.trim()) || [];
     const citedIds = [...draft.matchAll(/\[(E\d+)\]/g)].map((match) => match[1]);
     if (!sentences.length || sentences.some((sentence) => !/\[E\d+\]/.test(sentence)) || citedIds.some((id) => !evidenceIds.has(id))) {
       return json(res, 422, { error: 'ai_evidence_unverified' });
@@ -103,7 +105,8 @@ export default async function handler(req, res) {
           },
         ],
         temperature: 0,
-        max_completion_tokens: 8,
+        reasoning_effort: 'low',
+        max_completion_tokens: 128,
       }),
       signal: controller.signal,
     });
