@@ -1,0 +1,8 @@
+.git
+.vercel
+.npm-cache
+.tmp-tools
+node_modules
+.env
+.env.*
+.env.example

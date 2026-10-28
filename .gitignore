@@ -1,3 +1,11 @@
 BA INTERVIEW RECORDING/GMT20220719-121805_Recording_1920x1200.mp4
 
 BA INTERVIEW RECORDING/GMT20220719-121805_Recording.m4a
+.vercel
+
+.env
+.env.*
+!.env.example
+.npm-cache/
+.tmp-tools/
+node_modules/

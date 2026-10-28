@@ -4,8 +4,8 @@
  * localStorage progress stores (baPracticedQuestions, baQuestionRatings,
  * baSavedQuestions, baQuestionAnswers) so Studio progress is shared with the
  * existing Question practice, Review queue, Saved questions and Coverage views.
- * Studio-only state uses the baStudio* namespace. Progress is browser-local and
- * does not synchronize across devices.
+ * Studio-only state uses the baStudio* namespace. Progress is stored locally and
+ * syncs across devices after sign-in.
  */
 'use strict';
 
@@ -265,7 +265,7 @@ function runnerHTML() {
       <button class="smallbtn primary" type="button" onclick="studioSubmitAnswer()">Save answer & mark practiced</button>
       <button class="smallbtn" type="button" onclick="studioToggleSave()">${saved ? 'Saved for later ✓' : 'Save for later ☆'}</button>
       <button class="smallbtn" type="button" onclick="studioTogglePracticed()">${practiced ? 'Unmark practiced' : 'Mark practiced'}</button>
-      <span class="studio-status" id="studioAnswerStatus">${stored ? 'Response saved in this browser.' : 'Submit a non-empty answer to mark this question practiced.'}</span>
+      <span class="studio-status" id="studioAnswerStatus">${stored ? 'Response saved locally; syncs when signed in.' : 'Submit a non-empty answer to mark this question practiced.'}</span>
     </div>
     <div class="studio-actions">
       <button class="smallbtn" type="button" id="studioReveal" aria-expanded="${revealed}" onclick="studioToggleReveal()">${revealed ? 'Hide source answer' : 'Reveal source answer'}</button>
@@ -345,7 +345,7 @@ function listPaneHTML(kind, title) {
   const practiced = base.filter((x) => isPracticed(x.id)).length;
   if (studioState.runner) return runnerHTML();
   return `${filterBarHTML()}
-    <p class="studio-count">${list.length} of ${base.length} items · ${practiced} practiced · answers save only in this browser</p>
+    <p class="studio-count">${list.length} of ${base.length} items · ${practiced} practiced · answers save locally and sync when signed in</p>
     ${list.length ? `<div class="studio-list">${list.slice(0, 200).map((x) => listItemHTML(x)).join('')}</div>
       ${list.length > 200 ? `<p class="studio-count">Showing the first 200 matches. Narrow the filters to see more.</p>` : ''}
       <div class="studio-actions" style="margin-top:12px"><button class="smallbtn primary" type="button" onclick="studioPracticeFiltered('${kind}','${studioEscape(title)}')">Practice these ${list.length} question${list.length === 1 ? '' : 's'}</button></div>`
@@ -438,7 +438,7 @@ function frameworkHTML() {
         <button class="smallbtn primary" type="button" onclick="studioPracticeRelated('${it.id}')">Practice related repository questions</button>
         <button class="smallbtn" type="button" onclick="studioRateFramework('${it.id}','know')" aria-pressed="${ratingOf(it.id) === 'know'}">Mark rehearsed ✓</button>
       </div>
-      ${ratingOf(it.id) ? `<p class="studio-note">Your status: ${ratingOf(it.id) === 'know' ? 'Rehearsed' : ratingOf(it.id)} (saved in this browser; included in the review queue).</p>` : ''}
+      ${ratingOf(it.id) ? `<p class="studio-note">Your status: ${ratingOf(it.id) === 'know' ? 'Rehearsed' : ratingOf(it.id)} (saved locally; syncs when signed in; included in the review queue).</p>` : ''}
     </div>
   </details>`;
   return `<div class="studio-hero">
@@ -1016,7 +1016,7 @@ function mockPaneHTML() {
     <div>
       <div class="readlabel">Module G · uses real indexed repository questions</div>
       <h2>Mock interview builder</h2>
-      <p>Assemble a timed session from the indexed content: universal framework questions, BA questions, technical questions, situational prompts and case studies. Answers stay in this browser.</p>
+      <p>Assemble a timed session from the indexed content: universal framework questions, BA questions, technical questions, situational prompts and case studies. Answers sync when signed in.</p>
     </div>
   </div>
   <div class="panel">
@@ -1118,7 +1118,7 @@ function mockSessionHTML(s) {
     <textarea id="studioMockAnswer" class="studio-answer" placeholder="Answer aloud, then jot the key points…">${studioEscape(s.responses[s.index] || '')}</textarea>
     <div class="studio-actions">
       <button class="smallbtn" type="button" id="studioMockReveal" aria-expanded="${revealed}" onclick="studioMockToggleReveal()">${revealed ? 'Hide source answer' : 'Reveal source answer'}</button>
-      <span class="studio-note">${(s.responses[s.index] || '').trim() ? 'Response saved in this browser.' : 'Your response saves automatically.'}</span>
+      <span class="studio-note">${(s.responses[s.index] || '').trim() ? 'Response saved locally; syncs when signed in.' : 'Your response saves automatically.'}</span>
     </div>
     <div class="runner-block ${revealed ? '' : 'hide'}">
       ${item.answer
@@ -1189,7 +1189,7 @@ function mockFinishHTML(s) {
   return `<div class="panel mock-finish">
     <div class="readlabel">Session complete</div>
     <h2>Studio mock interview finished</h2>
-    <p>You answered ${s.responses.filter((x) => x && x.trim()).length} of ${s.items.length} questions. Responses and ratings are saved in this browser.</p>
+    <p>You answered ${s.responses.filter((x) => x && x.trim()).length} of ${s.items.length} questions. Responses and ratings are saved locally; syncs when signed in.</p>
     <button class="smallbtn primary" type="button" onclick="studioNewMock()">Set up another session</button>
   </div>`;
 }
@@ -1209,7 +1209,7 @@ function studioHomeHTML() {
     <div>
       <div class="readlabel">Built from ${STUDIO.stats.sourcesIndexed} indexed repository sources + ${studioEscape(STUDIO.frameworkSource)}</div>
       <h2>Interview Practice Studio</h2>
-      <p>Structured practice across the PDF's interview framework, the BA question bank, technical sets, case studies and situational prompts. All question text and answers come from the repository's own extracted sources — nothing is invented. Progress is saved in this browser only and does not sync across devices.</p>
+      <p>Structured practice across the PDF's interview framework, the BA question bank, technical sets, case studies and situational prompts. All question text and answers come from the repository's own extracted sources — nothing is invented. Progress is saved locally; syncs when signed in only and does not sync across devices.</p>
     </div>
     <div class="studio-hero-actions">
       ${next ? `<button class="smallbtn primary" type="button" onclick="studioContinue()">Continue practice →</button>` : ''}

@@ -1,0 +1,14 @@
+{
+  "name": "business-analyst-prep-desk",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.2"
+  },
+  "devDependencies": {
+    "vercel": "^64.2.0"
+  }
+}
