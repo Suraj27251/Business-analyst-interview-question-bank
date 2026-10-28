@@ -275,7 +275,7 @@
     try { await request('/api/auth/logout', { method: 'POST', body: '{}' }); } catch { /* The session may have expired already. */ }
     csrf = ''; initialized = false; migrationAvailable = false; revisions.clear(); dirty.clear(); deleteIntents.clear(); conflicts.clear(); status = 'Not signed in'; render();
   }
-  window.BAState = { initialize, getState: read, saveState, syncState, migrateLocalState, getSyncStatus: () => status, exportLocalState };
+  window.BAState = { initialize, getState: read, saveState, syncState, migrateLocalState, getSyncStatus: () => status, getCsrfToken: () => csrf, exportLocalState };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true }); else initialize();
   document.addEventListener('ba-state-loaded', () => {
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;

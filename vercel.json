@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/ai/personalized-answer.js": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     {
       "source": "/",

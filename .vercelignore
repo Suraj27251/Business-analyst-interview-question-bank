@@ -1,8 +1,10 @@
 .git
 .vercel
 .npm-cache
-.tmp-tools
+.tmp-tools/
 node_modules
 .env
 .env.*
 .env.example
+# Personal resume and evidence files are local inputs, not public site assets.
+suraj_docs/

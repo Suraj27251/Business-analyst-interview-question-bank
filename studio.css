@@ -144,3 +144,9 @@
   .studio-nav { flex-direction: column; }
   .jd-add-row { flex-direction: column; }
 }
+.studio-ai-answer { display: grid; gap: 9px; margin: 14px 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #f8fbf9; }
+.studio-ai-answer details summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+.studio-ai-answer textarea { width: 100%; box-sizing: border-box; margin-top: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; resize: vertical; }
+.studio-ai-preview { padding-top: 8px; border-top: 1px solid var(--line); }
+.studio-ai-preview h4 { margin: 4px 0 8px; }
+.studio-ai-preview .studio-note { display: block; margin: 8px 0; overflow-wrap: anywhere; }

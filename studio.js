@@ -132,6 +132,9 @@ const studioState = {
   pane: 'home',
   filters: { query: '', topic: 'all', source: 'all', status: 'all', hasAnswer: 'all' },
   runner: null, // { list, at, title, returnPane, onDone }
+  aiDraft: null,
+  aiGenerating: false,
+  aiMessage: '',
 };
 
 const MODULE_LABEL = { B: 'BA interview questions', C: 'Technical practice', E: 'Situational & what-if' };
@@ -242,6 +245,7 @@ function runnerHTML() {
   const practiced = isPracticed(item.id);
   const stored = answersStore()[item.id] || '';
   const revealed = studioState.reveal === item.id;
+  const aiDraft = studioState.aiDraft && studioState.aiDraft.id === item.id ? studioState.aiDraft : null;
   const followUps = item.followUps || [];
   const locator = item.locator && item.locator.page ? ` · page ${item.locator.page}` : '';
   return `<article class="studio-runner">
@@ -259,6 +263,12 @@ function runnerHTML() {
     </div>
     <div class="runner-source">${item.generated ? 'Built from the role details and requirements in your JD.' : `${studioEscape(item.name)}${locator} · <a href="${studioUrl(item.path)}" target="_blank" rel="noopener">open original source ↗</a>`}</div>
     <div class="runner-question">${studioEscape(item.question)}</div>
+    <div class="studio-ai-answer">
+      <button class="smallbtn" type="button" onclick="studioGenerateAnswer()" ${studioState.aiGenerating ? 'disabled' : ''}>${studioState.aiGenerating ? 'Generating draft…' : 'Generate personalized draft'}</button>
+      <details><summary>Optional: add a work example or detail to emphasize</summary><textarea id="studioAiContext" rows="3" placeholder="Add a real example or detail you want the draft to use. Do not include confidential information."></textarea></details>
+      <span class="studio-status" id="studioAiStatus">${studioEscape(studioState.aiMessage || 'Drafts use retrieved repository/profile evidence. The question, matching excerpts, job details, and optional context are sent to Groq.')}</span>
+      ${aiDraft ? `<section class="studio-ai-preview"><h4>AI answer draft · review before using</h4><textarea id="studioAiDraftText" rows="8">${studioEscape(aiDraft.draft)}</textarea><div class="studio-note">Evidence used: ${aiDraft.sources.map((source) => `${studioEscape(source.source)} (${studioEscape(source.kind)})`).join(' · ') || 'No matching excerpts'}</div><div class="studio-actions"><button class="smallbtn primary" type="button" onclick="studioAcceptAiDraft()">Use and save draft</button><button class="smallbtn" type="button" onclick="studioDiscardAiDraft()">Discard</button></div><p class="studio-note">Using a draft saves it to your answer without marking the question practiced. Review it, then use the existing practice controls if you want to mark it practiced.</p></section>` : ''}
+    </div>
     <label class="studio-answer-label" for="studioAnswer">Your answer</label>
     <textarea id="studioAnswer" class="studio-answer" placeholder="Answer aloud first, then jot down the key points…">${studioEscape(stored)}</textarea>
     <div class="studio-actions">
@@ -319,6 +329,52 @@ function studioSubmitAnswer() {
   pushRecent(item, 'answered');
   studioRenderPane();
 }
+async function studioGenerateAnswer() {
+  const r = studioState.runner;
+  if (!r || studioState.aiGenerating) return;
+  const item = r.list[r.at];
+  const status = $s('#studioAiStatus');
+  const csrf = window.BAState?.getCsrfToken?.();
+  if (!csrf) { if (status) status.textContent = 'Sign in first to generate a personalized draft.'; return; }
+  studioState.aiGenerating = true;
+  studioState.aiMessage = '';
+  studioRenderPane();
+  try {
+    const response = await fetch('/api/ai/personalized-answer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+      body: JSON.stringify({
+        question: item.question,
+        jobDescription: localStorage.getItem('baStudioJdText') || '',
+        personalContext: $s('#studioAiContext')?.value || '',
+      }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const messages = { ai_not_configured: 'AI answer generation is not configured on this deployment.', unauthenticated: 'Sign in again to generate a draft.', forbidden: 'This account is not allowed to generate a draft.', csrf_failed: 'Your session changed. Refresh the page and try again.', ai_rate_limited: 'Groq is rate limiting requests. Try again shortly.' };
+      throw new Error(messages[result.error] || 'The draft could not be generated. Try again.');
+    }
+    if (!studioState.runner || studioState.runner.list[studioState.runner.at].id !== item.id) return;
+    studioState.aiDraft = { id: item.id, draft: result.draft, sources: result.sources || [] };
+  } catch (error) {
+    studioState.aiMessage = error.message;
+  } finally {
+    studioState.aiGenerating = false;
+    studioRenderPane();
+  }
+}
+function studioAcceptAiDraft() {
+  const draft = studioState.aiDraft;
+  const field = $s('#studioAiDraftText');
+  if (!draft || !field) return;
+  const value = field.value.trim();
+  if (!value) return;
+  setAnswer(draft.id, value);
+  studioState.aiDraft = null;
+  studioState.aiMessage = 'Draft saved to your answer. It was not marked practiced.';
+  studioRenderPane();
+}
+function studioDiscardAiDraft() { studioState.aiDraft = null; studioState.aiMessage = 'Draft discarded.'; studioRenderPane(); }
 function studioToggleSave() {
   const item = studioState.runner.list[studioState.runner.at];
   toggleSaved(item);
