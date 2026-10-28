@@ -62,24 +62,73 @@ test('AI route validates question and reports missing server key without calling
 test('successful response sends retrieved profile evidence to Groq and returns source labels', async () => {
   process.env.GROQ_API = 'test-key-never-returned';
   process.env.AI_PROFILE_EVIDENCE = 'Candidate experience: mapped process improvement workflows and measured a reduction in support response time.';
-  let providerRequest;
+  const providerRequests = [];
   globalThis.fetch = async (url, options) => {
-    providerRequest = { url, options, body: JSON.parse(options.body) };
-    return { ok: true, json: async () => ({ choices: [{ message: { content: 'I mapped the workflow and validated it with users.' } }] }) };
+    const providerRequest = { url, options, body: JSON.parse(options.body) };
+    providerRequests.push(providerRequest);
+    const content = providerRequests.length === 1
+      ? 'I mapped process improvement workflows and measured a reduction in support response time [E1].'
+      : 'PASS';
+    return { ok: true, json: async () => ({ choices: [{ message: { content } }] }) };
   };
   const res = responseCapture();
   await handler(request({ question: 'Tell me about a process improvement experience', jobDescription: 'Business Analyst role' }), res);
   assert.equal(res.statusCode, 200);
-  assert.equal(providerRequest.url, 'https://api.groq.com/openai/v1/chat/completions');
-  assert.equal(providerRequest.options.headers.Authorization, 'Bearer test-key-never-returned');
-  assert.equal(providerRequest.body.model, 'openai/gpt-oss-120b');
-  const evidence = providerRequest.body.messages[1].content;
+  assert.equal(providerRequests.length, 2);
+  assert.equal(providerRequests[0].url, 'https://api.groq.com/openai/v1/chat/completions');
+  assert.equal(providerRequests[0].options.headers.Authorization, 'Bearer test-key-never-returned');
+  assert.equal(providerRequests[0].body.model, 'openai/gpt-oss-120b');
+  const evidence = providerRequests[0].body.messages[1].content;
   assert.match(evidence, /Private candidate profile configured in the deployment/);
   assert.match(evidence, /process improvement/i);
+  assert.match(providerRequests[1].body.messages[1].content, /Proposed answer to audit/);
   const result = JSON.parse(res.body);
-  assert.match(result.draft, /mapped the workflow/);
-  assert.ok(result.sources.some((source) => source.kind === 'profile'));
+  assert.match(result.draft, /mapped process improvement workflows/);
+  assert.ok(result.sources.some((source) => source.kind === 'profile evidence'));
+  assert.equal(result.sources[0].id, 'E1');
   assert.equal(res.headers['Cache-Control'], 'no-store');
+});
+
+test('AI route blocks a draft when the evidence auditor fails closed', async () => {
+  process.env.GROQ_API = 'test-key';
+  process.env.AI_PROFILE_EVIDENCE = 'Candidate built a verified SQL reporting project using PostgreSQL.';
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    const content = calls === 1 ? 'I led an enterprise database team and saved $2 million. [E1]' : 'FAIL';
+    return { ok: true, json: async () => ({ choices: [{ message: { content } }] }) };
+  };
+  const res = responseCapture();
+  await handler(request({ question: 'Describe your SQL reporting experience' }), res);
+  assert.equal(res.statusCode, 422);
+  assert.equal(JSON.parse(res.body).error, 'ai_evidence_unverified');
+});
+
+test('AI route blocks uncited claims before calling the evidence auditor', async () => {
+  process.env.GROQ_API = 'test-key';
+  process.env.AI_PROFILE_EVIDENCE = 'Candidate built a verified SQL reporting project using PostgreSQL.';
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    return { ok: true, json: async () => ({ choices: [{ message: { content: 'I led an enterprise database team and saved $2 million.' } }] }) };
+  };
+  const res = responseCapture();
+  await handler(request({ question: 'Describe your SQL reporting experience' }), res);
+  assert.equal(res.statusCode, 422);
+  assert.equal(JSON.parse(res.body).error, 'ai_evidence_unverified');
+  assert.equal(calls, 1);
+});
+
+test('AI route abstains without matching candidate evidence and does not call Groq', async () => {
+  process.env.GROQ_API = 'test-key';
+  delete process.env.AI_PROFILE_EVIDENCE;
+  let calls = 0;
+  globalThis.fetch = async () => { calls += 1; throw new Error('Groq should not be called'); };
+  const res = responseCapture();
+  await handler(request({ question: 'Describe my qzxvnt experience' }), res);
+  assert.equal(res.statusCode, 422);
+  assert.equal(JSON.parse(res.body).error, 'insufficient_evidence');
+  assert.equal(calls, 0);
 });
 
 after(() => {

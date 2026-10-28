@@ -1,6 +1,6 @@
 # Personalized AI answer drafts
 
-Interview Practice Studio can generate a reviewable answer draft for the current practice question. It retrieves short, relevant excerpts from the checked-in source corpus and, when configured, private candidate profile evidence. It then sends those excerpts, the question, the saved job description (if any), and optional user context to Groq's chat completions API. Keep the API key and profile evidence server-side.
+Interview Practice Studio can generate a reviewable answer draft for the current practice question. It retrieves short, relevant excerpts only from the curated project index and private candidate profile evidence. Generic interview guides and sample answers are excluded because they are not evidence about the candidate. The question, matching evidence, saved job description (for tailoring only), and optional user context are sent to Groq's chat completions API. Keep the API key and profile evidence server-side.
 
 ## Configuration
 
@@ -14,7 +14,7 @@ Interview Practice Studio can generate a reviewable answer draft for the current
 
 Open a question in Interview Practice Studio and select **Generate personalized draft**. Review and edit the draft and evidence labels. **Use and save draft** stores it in the existing `baQuestionAnswers` map, which syncs through the existing Neon state route when signed in. This action does not mark the question practiced. The existing practice controls continue to handle that separately.
 
-The prompt asks the model to avoid unsupported claims and to mark missing specifics with a bracketed reminder. Review every answer before using it in an interview. Do not put confidential employer or customer information in the optional context field.
+The function requires matching candidate evidence before asking Groq to draft. It then makes a second Groq request to check every factual statement and citation against that evidence; it blocks the draft if any claim is unsupported or uncertain. When evidence is missing, add accurate details in the optional context field. The job description is used only to tailor emphasis, never as evidence about the candidate. This fail-closed check reduces hallucinations, but no language model can guarantee truth if the supplied profile or context itself is inaccurate. Do not put confidential employer or customer information in the optional context field.
 
 ## Provider details
 
@@ -22,4 +22,4 @@ The function calls `POST https://api.groq.com/openai/v1/chat/completions`. The k
 
 ## Verification
 
-Run `npm test`. The personalized-answer route tests cover authentication/CSRF, missing configuration, validation, and a mocked Groq response. Live generation requires a deployment environment with `GROQ_API` and an authenticated session.
+Run `npm test`. The personalized-answer route tests cover authentication/CSRF, missing configuration, validation, evidence-based generation, abstention without matching evidence, and blocking a draft rejected by the evidence auditor. Live generation requires a deployment environment with `GROQ_API` and an authenticated session.
