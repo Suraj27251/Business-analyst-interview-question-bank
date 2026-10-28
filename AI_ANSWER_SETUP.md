@@ -6,7 +6,7 @@ Interview Practice Studio can generate a reviewable answer draft for the current
 
 - Set `GROQ_API` to a Groq API key in the Vercel environments where this feature will run. `GROQ_API_KEY` is also accepted by the function.
 - For Preview deployments, add the key to the Preview environment separately. The current project has `GROQ_API` configured for Production only.
-- `GROQ_MODEL` is optional; the default is `llama-3.3-70b-versatile`.
+- `GROQ_MODEL` is optional; the default is `openai/gpt-oss-120b`.
 - `AI_PROFILE_EVIDENCE` is optional. Add a concise, sanitized work-history/project summary to the Vercel environment to personalize drafts from resume evidence. Do not put actual resume text in tracked source files.
 - The existing GitHub sign-in and allowlist are required. The AI endpoint also validates the session's same-origin CSRF token.
 
