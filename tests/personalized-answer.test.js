@@ -92,6 +92,27 @@ test('successful response sends retrieved profile evidence to Groq and returns s
   assert.equal(res.headers['Cache-Control'], 'no-store');
 });
 
+test('deployed evidence bundle supports SQL project answers without the excluded local evidence index', async () => {
+  process.env.GROQ_API = 'test-key';
+  delete process.env.AI_PROFILE_EVIDENCE;
+  let calls = 0;
+  globalThis.fetch = async (_url, options) => {
+    calls += 1;
+    const requestBody = JSON.parse(options.body);
+    if (calls === 1) {
+      assert.match(requestBody.messages[1].content, /telecom-sql-analytics/);
+      assert.match(requestBody.messages[1].content, /194 SQL queries\/objects/);
+      return { ok: true, json: async () => ({ choices: [{ message: { content: 'In my telecom churn analytics project, I used PostgreSQL and SQL to analyze the dataset [E1]. The project includes SQL analysis and a dashboard for its findings [E1].' } }] }) };
+    }
+    return { ok: true, json: async () => ({ choices: [{ message: { content: 'PASS' } }] }) };
+  };
+  const res = responseCapture();
+  await handler(request({ question: 'Explain how you use SQL in your role as a Business Analyst.' }), res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(calls, 2);
+  assert.equal(JSON.parse(res.body).sources[0].source, 'GitHub: telecom-sql-analytics (public repository)');
+});
+
 test('AI route blocks a draft when the evidence auditor fails closed', async () => {
   process.env.GROQ_API = 'test-key';
   process.env.AI_PROFILE_EVIDENCE = 'Candidate built a verified SQL reporting project using PostgreSQL.';

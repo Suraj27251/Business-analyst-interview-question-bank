@@ -1,7 +1,5 @@
-import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { AI_PROJECT_EVIDENCE } from './ai-project-evidence.js';
 
-const evidencePath = fileURLToPath(new URL('../suraj_docs/GitHub-Evidence-Index.md', import.meta.url));
 const stopWords = new Set('a an and answer are as at be by can candidate did do for from how i in is it me my of on or our the their this to was we what when where which with you your about describe example experience personal project role tell use used using work'.split(' '));
 const tokenize = (value) => (String(value || '').toLowerCase().match(/[\p{L}\p{N}]{2,}/gu) || []).filter((word) => !stopWords.has(word));
 
@@ -24,13 +22,15 @@ function chunkText(text, path, kind, limit = 1000) {
   return chunks;
 }
 
-let githubEvidence = '';
-try { githubEvidence = fs.readFileSync(evidencePath, 'utf8'); }
-catch { /* The optional, user-maintained evidence index may not be in a deployment checkout. */ }
-
-// Interview guides and sample answers are study material, not evidence about
-// the candidate. Only use the curated project index and explicit profile input.
-const knowledge = chunkText(githubEvidence, 'suraj_docs/GitHub-Evidence-Index.md', 'project evidence');
+// Keep this catalogue in the function bundle: Vercel intentionally excludes
+// suraj_docs/, which contains local/private evidence-index material.
+// Interview guides and sample answers are not candidate evidence.
+const knowledge = AI_PROJECT_EVIDENCE.map(({ source, excerpt }) => ({
+  path: source,
+  kind: 'project evidence',
+  content: excerpt,
+  terms: tokenize(`${source} ${excerpt}`),
+}));
 
 export function retrieveEvidence(query, limit = 7) {
   const queryTerms = [...new Set(tokenize(query))];
