@@ -59,100 +59,68 @@ test('AI route validates question and reports missing server key without calling
   delete process.env.GROQ_API;
 });
 
-test('successful response sends retrieved profile evidence to Groq and returns source labels', async () => {
+test('successful response sends optional profile evidence to Groq and returns source labels', async () => {
   process.env.GROQ_API = 'test-key-never-returned';
   process.env.AI_PROFILE_EVIDENCE = 'Candidate experience: mapped process improvement workflows and measured a reduction in support response time.';
   const providerRequests = [];
   globalThis.fetch = async (url, options) => {
     const providerRequest = { url, options, body: JSON.parse(options.body) };
     providerRequests.push(providerRequest);
-    const content = providerRequests.length === 1
-      ? 'I mapped process improvement workflows and measured a reduction in support response time. [E1]'
-      : 'PASS';
-    return { ok: true, json: async () => ({ choices: [{ message: { content } }] }) };
+    return { ok: true, json: async () => ({ choices: [{ message: { content: 'In my process improvement project, I mapped the workflow and measured a reduction in support response time.' } }] }) };
   };
   const res = responseCapture();
   await handler(request({ question: 'Tell me about a process improvement experience', jobDescription: 'Business Analyst role' }), res);
   assert.equal(res.statusCode, 200);
-  assert.equal(providerRequests.length, 2);
+  assert.equal(providerRequests.length, 1);
   assert.equal(providerRequests[0].url, 'https://api.groq.com/openai/v1/chat/completions');
   assert.equal(providerRequests[0].options.headers.Authorization, 'Bearer test-key-never-returned');
   assert.equal(providerRequests[0].body.model, 'openai/gpt-oss-120b');
-  assert.equal(providerRequests[1].body.reasoning_effort, 'low');
-  assert.equal(providerRequests[1].body.max_completion_tokens, 128);
   assert.match(providerRequests[0].body.messages[0].content, /2 to 3 concise sentences/);
+  assert.match(providerRequests[0].body.messages[0].content, /Do not refuse just because evidence is incomplete/);
   const evidence = providerRequests[0].body.messages[1].content;
   assert.match(evidence, /Private candidate profile configured in the deployment/);
   assert.match(evidence, /process improvement/i);
-  assert.match(providerRequests[1].body.messages[1].content, /Proposed answer to audit/);
   const result = JSON.parse(res.body);
-  assert.match(result.draft, /mapped process improvement workflows/);
+  assert.match(result.draft, /mapped the workflow/);
   assert.ok(result.sources.some((source) => source.kind === 'profile evidence'));
   assert.equal(result.sources[0].id, 'E1');
   assert.equal(res.headers['Cache-Control'], 'no-store');
 });
 
-test('deployed evidence bundle supports SQL project answers without the excluded local evidence index', async () => {
+test('deployed evidence bundle supports SQL project answers without a second audit call', async () => {
   process.env.GROQ_API = 'test-key';
   delete process.env.AI_PROFILE_EVIDENCE;
   let calls = 0;
   globalThis.fetch = async (_url, options) => {
     calls += 1;
     const requestBody = JSON.parse(options.body);
-    if (calls === 1) {
-      assert.match(requestBody.messages[1].content, /telecom-sql-analytics/);
-      assert.match(requestBody.messages[1].content, /194 SQL queries\/objects/);
-      return { ok: true, json: async () => ({ choices: [{ message: { content: 'In my telecom churn analytics project, I used PostgreSQL and SQL to analyze the dataset [E1]. The project includes SQL analysis and a dashboard for its findings [E1].' } }] }) };
-    }
-    return { ok: true, json: async () => ({ choices: [{ message: { content: 'PASS' } }] }) };
+    assert.match(requestBody.messages[1].content, /telecom-sql-analytics/);
+    assert.match(requestBody.messages[1].content, /194 SQL queries\/objects/);
+    return { ok: true, json: async () => ({ choices: [{ message: { content: 'In my telecom churn analytics project, I used PostgreSQL and SQL to analyze the dataset. The project includes SQL analysis and a dashboard for its findings.' } }] }) };
   };
   const res = responseCapture();
   await handler(request({ question: 'Explain how you use SQL in your role as a Business Analyst.' }), res);
   assert.equal(res.statusCode, 200);
-  assert.equal(calls, 2);
+  assert.equal(calls, 1);
   assert.equal(JSON.parse(res.body).sources[0].source, 'GitHub: telecom-sql-analytics (public repository)');
 });
 
-test('AI route blocks a draft when the evidence auditor fails closed', async () => {
-  process.env.GROQ_API = 'test-key';
-  process.env.AI_PROFILE_EVIDENCE = 'Candidate built a verified SQL reporting project using PostgreSQL.';
-  let calls = 0;
-  globalThis.fetch = async () => {
-    calls += 1;
-    const content = calls === 1 ? 'I led an enterprise database team and saved $2 million. [E1]' : 'FAIL';
-    return { ok: true, json: async () => ({ choices: [{ message: { content } }] }) };
-  };
-  const res = responseCapture();
-  await handler(request({ question: 'Describe your SQL reporting experience' }), res);
-  assert.equal(res.statusCode, 422);
-  assert.equal(JSON.parse(res.body).error, 'ai_evidence_unverified');
-});
-
-test('AI route blocks uncited claims before calling the evidence auditor', async () => {
-  process.env.GROQ_API = 'test-key';
-  process.env.AI_PROFILE_EVIDENCE = 'Candidate built a verified SQL reporting project using PostgreSQL.';
-  let calls = 0;
-  globalThis.fetch = async () => {
-    calls += 1;
-    return { ok: true, json: async () => ({ choices: [{ message: { content: 'I led an enterprise database team and saved $2 million.' } }] }) };
-  };
-  const res = responseCapture();
-  await handler(request({ question: 'Describe your SQL reporting experience' }), res);
-  assert.equal(res.statusCode, 422);
-  assert.equal(JSON.parse(res.body).error, 'ai_evidence_unverified');
-  assert.equal(calls, 1);
-});
-
-test('AI route abstains without matching candidate evidence and does not call Groq', async () => {
+test('AI route generates an adaptable answer when matching evidence is unavailable', async () => {
   process.env.GROQ_API = 'test-key';
   delete process.env.AI_PROFILE_EVIDENCE;
   let calls = 0;
-  globalThis.fetch = async () => { calls += 1; throw new Error('Groq should not be called'); };
+  globalThis.fetch = async (_url, options) => {
+    calls += 1;
+    const requestBody = JSON.parse(options.body);
+    assert.match(requestBody.messages[1].content, /No matching candidate evidence was found/);
+    return { ok: true, json: async () => ({ choices: [{ message: { content: 'I would start by clarifying the business need, then document requirements and validate them with stakeholders. [Add a real example and outcome from your experience.]' } }] }) };
+  };
   const res = responseCapture();
-  await handler(request({ question: 'Describe my qzxvnt experience' }), res);
-  assert.equal(res.statusCode, 422);
-  assert.equal(JSON.parse(res.body).error, 'insufficient_evidence');
-  assert.equal(calls, 0);
+  await handler(request({ question: 'How do you gather requirements for a project?' }), res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(calls, 1);
+  assert.equal(JSON.parse(res.body).sources.length, 0);
+  assert.match(JSON.parse(res.body).draft, /real example and outcome/);
 });
 
 after(() => {

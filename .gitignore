@@ -6,6 +6,7 @@ BA INTERVIEW RECORDING/GMT20220719-121805_Recording.m4a
 .env
 .env.*
 !.env.example
+local.env
 .npm-cache/
 .tmp-tools/
 node_modules/
