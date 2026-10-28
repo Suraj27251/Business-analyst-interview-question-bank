@@ -78,6 +78,7 @@ test('successful response sends retrieved profile evidence to Groq and returns s
   assert.equal(providerRequests[0].url, 'https://api.groq.com/openai/v1/chat/completions');
   assert.equal(providerRequests[0].options.headers.Authorization, 'Bearer test-key-never-returned');
   assert.equal(providerRequests[0].body.model, 'openai/gpt-oss-120b');
+  assert.match(providerRequests[0].body.messages[0].content, /2 to 3 concise sentences/);
   const evidence = providerRequests[0].body.messages[1].content;
   assert.match(evidence, /Private candidate profile configured in the deployment/);
   assert.match(evidence, /process improvement/i);

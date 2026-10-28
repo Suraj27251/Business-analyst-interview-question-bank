@@ -40,6 +40,7 @@ export default async function handler(req, res) {
         'The evidence consists only of the curated project index, the candidate profile, and details the candidate entered in the context field. Study guides, example answers, and job descriptions are not candidate evidence.',
         'Never turn a portfolio or practice project into employment experience. Preserve the source context: call a project a project, and claim a job responsibility only when the evidence explicitly says it was a job responsibility.',
         'Do not invent or infer employers, clients, dates, job titles, responsibilities, actions, technologies, metrics, outcomes, team reactions, or business impact. Do not turn a goal or dashboard into a proven outcome.',
+        'Write one short paragraph of 2 to 3 concise sentences, about 40 to 60 words. Use simple, conversational words that are easy to say aloud and remember.',
         'Write only factual claims that a reviewer can trace to one or more evidence IDs. Place the supporting IDs inside each factual sentence immediately before its final punctuation, for example: I built a SQL dashboard [E1].',
         'If the evidence does not support a personal answer, return exactly: INSUFFICIENT_EVIDENCE. Do not fill gaps with a plausible example or generic first-person claims.',
         'Use a concise natural spoken style. Tailor emphasis to the job description only; never use the job description as evidence about the candidate.',
